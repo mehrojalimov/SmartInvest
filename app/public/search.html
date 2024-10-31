@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Bamazon</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<h1>Bamazon Books</h1>
+
+<p>Welcome to Bamazon Books!</p>
+
+<p><a href="add.html">Add your book to our catalog</a></p>
+
+<h2>Search for books</h2>
+
+<p>What kind of books are you interested in?</p>
+
+<div class="form">
+	<div>
+		<label for="genre">Genre:</label>
+		<select id="genre" name="genre">
+			<option value="">Any genre</option>
+			<option value="scifi">Science Fiction</option>
+			<option value="romance">Romance</option>
+			<option value="adventure">Choose Your Own Adventure</option>
+		</select>
+	</div>
+	<button id="submit">Search for books</button>
+</div>
+
+<div id="message"></div>
+
+<table>
+	<thead>
+		<tr><th>Title</th><th>Genre</th><th>Is it good?</th></tr>
+	</thead>
+	<tbody id="books"></tbody>
+</table>
+
+<script src="search.js"></script>
+
+</body>
+</html>
