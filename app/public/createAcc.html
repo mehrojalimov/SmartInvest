@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account</title>
+</head>
+<body>
+  <h1>Create Account</h1>
+
+  <!-- Input fields for username and password -->
+  <label for="username">Username:</label>
+  <input type="text" id="username" required minlength="3" maxlength="20">
+  <br><br>
+
+  <label for="password">Password:</label>
+  <input type="password" id="password" required minlength="8">
+  <br><br>
+
+  <!-- Button to trigger account creation -->
+  <button id="createAccountButton">Create Account</button>
+
+  <p>Already have an account? <a href="/login">Log in here</a>.</p>
+
+  <!-- Link to the external JavaScript file -->
+  <script src="createAcc.js"></script>
+</body>
+</html>
