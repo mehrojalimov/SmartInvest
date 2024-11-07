@@ -1,49 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<meta charset="utf-8">
-	<title>Bamazon</title>
-	<link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            width: 300px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .login-container h2 {
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .login-button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .login-button:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
 
-<h1>Bamazon Books</h1>
-
-<p>Welcome to Bamazon Books!</p>
-
-<p><a href="search.html">Search our catalog</a></p>
-
-<h2>Add your book to our catalog</h2>
-
-<p>Please give us some information about the book you want to add to our catalog:</p>
-
-<div class="form">
-	<div>
-		<label for="title">Title:</label>
-		<input id="title" type="text" name="title">
-	</div>
-	<div>
-		<label for="genre">Genre:</label>
-		<select id="genre" name="genre">
-			<option value="">Please select your book's genre</option>
-			<option value="scifi">Science Fiction</option>
-			<option value="romance">Romance</option>
-			<option value="adventure">Choose Your Own Adventure</option>
-		</select>
-	</div>
-	<div>
-		<label>Is it good?</label>
-		<input type="radio" name="quality" value="yes">
-		<label>Yes</label>
-		<input type="radio" name="quality" value="no">
-		<label>No</label>
-	</div>
-	<button id="submit">Add book to catalog</button>
+<div class="login-container">
+    <h2>Login</h2>
+    <div id="errorMessage" class="error-message"></div>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="button" class="login-button" id="loginButton">Login</button>
+    </form>
 </div>
 
-<div id="message"></div>
+<script src="login.js"></script>
 
-<script src="add.js"></script>
 
 </body>
 </html>
