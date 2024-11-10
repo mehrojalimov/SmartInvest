@@ -1,17 +1,17 @@
 const axios = require('axios');
-require('dotenv').config();
 
-const options = {
-  method: 'GET',
-  url: 'https://yahoo-finance15.p.rapidapi.com/api/yahoo/qu/quote/AAPL',
+const config = require('../../env.json');
+
+axios.get('https://yahoo-finance166.p.rapidapi.com/api/news/list-by-symbol', {
+  params: { s: 'AAPL,GOOGL,TSLA', region: 'US', snippetCount: 500 },
   headers: {
-    'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
-    'X-RapidAPI-Host': 'yahoo-finance15.p.rapidapi.com'
+    'X-RapidAPI-Key': config.RAPIDAPI_KEY,
+    'X-RapidAPI-Host': 'yahoo-finance166.p.rapidapi.com'
   }
-};
-
-axios.request(options).then(function (response) {
+})
+.then(response => {
   console.log(response.data);
-}).catch(function (error) {
+})
+.catch(error => {
   console.error(error);
 });

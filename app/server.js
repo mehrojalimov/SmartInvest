@@ -1,3 +1,6 @@
+const yahooFinance = require("./services/yahooFinance.js");
+
+
 let express = require("express");
 let { Pool } = require("pg");
 let argon2 = require("argon2"); // or bcrypt, whatever
