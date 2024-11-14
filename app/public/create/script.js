@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         alert("Account created successfully!");
-        window.location.href = "/login"; // Redirect to login page after successful account creation
+        window.location.href = "/dashboard"; // Redirect to dashboard page after successful account creation
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.error || "Unable to create account"}`);
