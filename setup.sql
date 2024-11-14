@@ -8,5 +8,4 @@ CREATE TABLE users(
     password VARCHAR(100)
 );
 
--- dummy data
--- INSERT INTO users (username, password) VALUES ('abc', 'TODO');
+

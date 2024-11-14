@@ -1,0 +1,115 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body Styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Page Title */
+h1 {
+    font-size: 2em;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Container for Flex Layout */
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1200px;
+    margin-bottom: 20px;
+}
+
+/* Table Styling */
+table {
+    width: 100%;
+    max-width: 700px;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+#stockChange {
+    flex: 1;
+    margin-right: 20px;
+}
+
+#stockTable {
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: center;
+}
+
+th {
+    background-color: #007acc;
+    color: #ffffff;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+td {
+    color: #555555;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Button Styling */
+button {
+    padding: 8px 16px;
+    margin: 0 5px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#sell {
+    background-color: #ff4b4b;
+    color: white;
+}
+
+#sell:hover {
+    background-color: #ff2e2e;
+}
+
+#buy {
+    background-color: #4caf50;
+    color: white;
+}
+
+#buy:hover {
+    background-color: #3e8e41;
+}
+
+/* Chart Canvas */
+#myChart {
+    flex: 2;
+    max-width: 700px;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
