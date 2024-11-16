@@ -11,6 +11,7 @@ axios.get('https://yahoo-finance166.p.rapidapi.com/api/news/list-by-symbol', {
 })
 .then(response => {
   console.log(response.data);
+  //console.log(JSON.stringify(response.data, null, 2));
 })
 .catch(error => {
   console.error(error);

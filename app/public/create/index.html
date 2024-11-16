@@ -3,26 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
   <title>Create Account</title>
 </head>
 <body>
-  <h1>Create Account</h1>
 
-  <!-- Input fields for username and password -->
-  <label for="username">Username:</label>
-  <input type="text" id="username" required minlength="3" maxlength="20">
-  <br><br>
-
-  <label for="password">Password:</label>
-  <input type="password" id="password" required minlength="8">
-  <br><br>
-
-  <!-- Button to trigger account creation -->
-  <button id="createAccountButton">Create Account</button>
-
-  <p>Already have an account? <a href="/login">Log in here</a>.</p>
-
-  <!-- Link to the external JavaScript file -->
+  <div class="create-container">
+      <h1>Create Account</h1>
+      <div id="errorMessage" class="error-message"></div>
+      <form id="createAccountForm">
+          <div class="form-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" required minlength="3" maxlength="20">
+          </div>
+          <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" required minlength="8">
+          </div>
+          <button type="button" class="create-button" id="createAccountButton">Create Account</button>
+      </form>
+      <p class="alternate-option">Already have an account? <a href="/login">Log in here</a>.</p>
+  </div>
+  
   <script src="script.js"></script>
-</body>
-</html>
+  </body>
+  </html>

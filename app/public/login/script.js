@@ -25,8 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // Check if login was successful
           if (response.ok) {
-              alert("Login successful!");
-              window.location.href = "/dashboard"; // Redirect to dashboard or main page
+              window.location.href = "/dashboard";
           } else {
               // Display an error message if login failed
               const errorData = await response.json();
