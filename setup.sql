@@ -8,4 +8,13 @@ CREATE TABLE users(
     password VARCHAR(100)
 );
 
+DROP TABLE IF EXISTS stocks;
+CREATE TABLE stocks(
+    stock_id SERIAL PRIMARY KEY,
+    stock_name VARCHAR(100),
+    stock_date DATE,
+    stock_value INT(50)
+
+);
+
 
