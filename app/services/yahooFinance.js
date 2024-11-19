@@ -1,18 +1,44 @@
-const axios = require('axios');
+const axios = require("axios");
 
-const config = require('../../env.json');
+const ALPHA_VANTAGE_API_KEY = "your_alpha_vantage_api_key";  // Replace with your actual API key
+const BASE_URL = "https://www.alphavantage.co/query";
 
-axios.get('https://yahoo-finance166.p.rapidapi.com/api/news/list-by-symbol', {
-  params: { s: 'AAPL,GOOGL,TSLA', region: 'US', snippetCount: 500 },
-  headers: {
-    'X-RapidAPI-Key': config.RAPIDAPI_KEY,
-    'X-RapidAPI-Host': 'yahoo-finance166.p.rapidapi.com'
+// Function to fetch stock price data
+async function getStockPrice(symbol) {
+  try {
+    const params = {
+      function: "TIME_SERIES_INTRADAY",
+      symbol: symbol,
+      interval: '5min',
+      apikey: ALPHA_VANTAGE_API_KEY
+    };
+    const response = await axios.get(BASE_URL, { params });
+    const data = response.data;
+
+    if (!data || data["Error Message"]) {
+      throw new Error(`No data found for ${symbol} or error in API call.`);
+    }
+
+    // Assuming you want the latest entry from the time series data
+    const timeSeries = data["Time Series (5min)"];
+    const latestEntry = Object.keys(timeSeries)[0];
+    const latestData = timeSeries[latestEntry];
+
+    return {
+      symbol: symbol,
+      time: latestEntry,
+      open: latestData["1. open"],
+      high: latestData["2. high"],
+      low: latestData["3. low"],
+      close: latestData["4. close"],
+      volume: latestData["5. volume"]
+    };
+  } catch (error) {
+    console.error("Error fetching stock data from Alpha Vantage:", error);
+    throw error;  // Re-throw to handle it in the calling function
   }
-})
-.then(response => {
-  console.log(response.data);
-  //console.log(JSON.stringify(response.data, null, 2));
-})
-.catch(error => {
-  console.error(error);
-});
+}
+
+module.exports = {
+  getStockPrice
+};

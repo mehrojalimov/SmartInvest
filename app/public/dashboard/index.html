@@ -4,59 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="style.css">
-    <title>Smart Invest</title>
+    <title>Stock Prices</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #stock-data {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Smart Invest</h1>
+    <h1>Stock Price Tracker</h1>
+    <label for="symbol">Enter Stock Symbol:</label>
+    <input type="text" id="symbol" placeholder="AAPL">
+    <button id="fetch-data">Get Stock Prices</button>
+    <div id="stock-data"></div>
 
-    <!-- Flex container for stockChange and chart -->
-    <div class="container">
-
-        
-
-        <table id="stockChange">
-            <thead>
-                <tr>
-                    <th>Stock</th>
-                    <th>Price change</th>
-                    <th>Buy/Sell</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Apple</td>
-                    <td>+ $22</td>
-                    <td>
-                        <button id="sell">Sell</button>
-                        <button id="buy">Buy</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <canvas id="myChart"></canvas>
-    </div>
-
-    <!-- Stock table below the flex container -->
-    <table id="stockTable">
-        <thead>
-            <tr>
-                <th>Stocks</th>
-                <th>Invest Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Apple</td>
-                <td>$150.00</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <script src="script.js"></script>
+    <script src="./script.js"></script>
 </body>
 
 </html>

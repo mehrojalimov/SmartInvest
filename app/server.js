@@ -1,5 +1,4 @@
-const yahooFinance = require("./services/yahooFinance.js");
-
+const yahooFinance = require("./services/yahooFinance.js"); 
 
 let express = require("express");
 let { Pool } = require("pg");
@@ -188,6 +187,30 @@ app.get("/public", (req, res) => {
 app.get("/private", authorize, (req, res) => {
   return res.send("A private message\n");
 });
+
+
+app.get("/dashboard", authorize, (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");  // Serve the dashboard HTML
+});
+
+// Fetch stock data from Yahoo Finance API
+app.get("/api/stock/:symbol", async (req, res) => {
+  const stockSymbol = req.params.symbol.toUpperCase();  // Get the symbol from the URL parameter
+
+  try {
+    const stockData = await yahooFinance.getStockPrice(stockSymbol);  // Assuming this service fetches stock data
+    if (!stockData) {
+      return res.status(404).json({ error: "Stock not found" });
+    }
+    return res.json(stockData);
+  } catch (error) {
+    console.error("Error fetching stock data:", error);
+    return res.status(500).json({ error: "An error occurred while fetching stock data" });
+  }
+});
+
+// Sample Yahoo Finance service (you can use your own service logic here)
+
 
 app.listen(port, hostname, () => {
   console.log(`http://${hostname}:${port}`);
