@@ -1,5 +1,11 @@
 const yahooFinance = require("./services/yahooFinance.js");
 
+// make this script's dir the cwd
+// b/c npm run start doesn't cd into src/ to run this
+// and if we aren't in its cwd, all relative paths will break
+process.chdir(__dirname);
+
+
 
 let express = require("express");
 let { Pool } = require("pg");
@@ -11,20 +17,44 @@ let env = require("../env.json");
 let hostname = "localhost";
 let port = 3000;
 
-let pool = new Pool(env);
+/*****************************************************************************************************************
+                                            Set up for Fly.io
+******************************************************************************************************************/
+let databaseConfig;
+
+// fly.io sets NODE_ENV to production automatically, otherwise it's unset when running locally
+if (process.env.NODE_ENV == "production") {
+	host = "0.0.0.0";
+	databaseConfig = { connectionString: process.env.DATABASE_URL };
+} else {
+	host = "localhost";
+  databaseConfig = {
+    user: env.user,
+    host: env.host,
+    database: env.database,
+    password: env.password,
+    port: env.port,
+  };
+}
+
 let app = express();
 app.use(express.static("public"));
 app.use(express.json());
 app.use(cookieParser());
 
+
+let pool = new Pool(databaseConfig);
+pool.connect().then(() => {
+  console.log("Connected to database");
+});
+
+/***************************************************************************************************************
+                                        Set up token and cookies
+****************************************************************************************************************/
 // global object for storing tokens
 // in a real app, we'd save them to a db so even if the server exits
 // users will still be logged in when it restarts
 let tokenStorage = {};
-
-pool.connect().then(() => {
-  console.log("Connected to database");
-});
 
 /* returns a random 32 byte string */
 function makeToken() {
@@ -40,6 +70,9 @@ let cookieOptions = {
   sameSite: "strict", // browser will only include this cookie on requests to this domain, not other domains; important to prevent cross-site request forgery attacks
 };
 
+/******************************************************************************************************************
+                                        Set up validate account function
+******************************************************************************************************************/
 function validateLogin(body) {
     if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
       return false;
@@ -67,7 +100,9 @@ function validateLogin(body) {
     return true;
   }
   
-
+/*****************************************************************************************************************
+                                                POST and GET methods
+*****************************************************************************************************************/
 app.post("/create", async (req, res) => {
     let { username, password } = req.body;
   
@@ -188,6 +223,13 @@ app.get("/public", (req, res) => {
 app.get("/private", authorize, (req, res) => {
   return res.send("A private message\n");
 });
+
+
+
+
+
+
+
 
 app.listen(port, hostname, () => {
   console.log(`http://${hostname}:${port}`);
