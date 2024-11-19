@@ -2,7 +2,7 @@ const config = require('../../env.json');
 
 const axios = require("axios");
 
-
+const ALPHADVANTAGE_KEY = config.ALPHADVANTAGE_KEY;
 const BASE_URL = "https://www.alphavantage.co/query";
 
 // Function to fetch stock price data
@@ -11,7 +11,7 @@ async function getStockPrice(symbol) {
     const params = {
       function: "GLOBAL_QUOTE",
       symbol: symbol,
-      apikey: "OEY8W7DT39AXZ2RV",
+      apikey: ALPHADVANTAGE_KEY,
     };
 
     const response = await axios.get(BASE_URL, { params });

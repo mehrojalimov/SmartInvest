@@ -1,5 +1,5 @@
 
-const yahooFinance = require("./services/yahooFinance.js"); 
+const alphavantage = require("./services/alphAdvantage.js"); 
 
 
 // make this script's dir the cwd
@@ -231,12 +231,12 @@ app.get("/dashboard", authorize, (req, res) => {
   res.sendFile(__dirname + "/public/index.html");  // Serve the dashboard HTML
 });
 
-// Fetch stock data from Yahoo Finance API
+// Fetch stock data from Alphadvantage API
 app.get("/api/stock/:symbol", async (req, res) => {
   const stockSymbol = req.params.symbol.toUpperCase();  // Get the symbol from the URL parameter
 
   try {
-    const stockData = await yahooFinance.getStockPrice(stockSymbol);  // Assuming this service fetches stock data
+    const stockData = await alphavantage.getStockPrice(stockSymbol);  // Assuming this service fetches stock data
     if (!stockData) {
       return res.status(404).json({ error: "Stock not found" });
     }
