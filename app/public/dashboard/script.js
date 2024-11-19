@@ -1,65 +1,34 @@
-// Function to get the initial price from the HTML table
-function getInitialPrice() {
-    const table = document.getElementById("stockTable");
-    const priceText = table.rows[1].cells[1].textContent;
-    return parseFloat(priceText.replace('$', ''));
-}
+document.getElementById('fetch-data').addEventListener('click', async () => {
+    const symbol = document.getElementById('symbol').value.toUpperCase();
+    if (!symbol) {
+        alert('Please enter a stock symbol!');
+        return;
+    }
 
-// Function to get the price change from the HTML table
-function getPriceChange() {
-    const table = document.getElementById("stockChange");
-    const changeText = table.rows[1].cells[1].textContent;
-    return parseFloat(changeText.replace(/[+$]/g, ''));
-}
+    const url = `/api/stock/${symbol}`;
 
-// Get initial price and price change
-const initialPrice = getInitialPrice();
-const priceChange = getPriceChange();
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
 
-// Calculate new price after change
-const updatedPrice = initialPrice + priceChange;
-
-// Create data points for the line graph
-const dataPoints = [
-    { x: 'Initial', y: initialPrice },
-    { x: 'Updated', y: updatedPrice }
-];
-
-// Create the chart
-new Chart("myChart", {
-    type: "line",
-    data: {
-        labels: dataPoints.map(point => point.x),
-        datasets: [{
-            label: "Stock",
-            data: dataPoints.map(point => point.y),
-            borderColor: "rgba(0,0,255,0.5)",
-            pointRadius: 4,
-            pointBackgroundColor: "rgba(0,0,255,1)",
-            fill: false,
-            tension: 0.1
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: false,
-                title: {
-                    display: true,
-                    text: 'Price (USD)'
-                }
-            },
-            x: {
-                title: {
-                    display: true,
-                    text: 'Status'
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                display: true
-            }
+        if (!response.ok) {
+            throw new Error(data.message || `No data found for ${symbol} or error in API call.`);
         }
+
+        const quote = data;  // Assuming data is directly the quote object
+
+        // Display stock data
+        document.getElementById('stock-data').innerHTML = `
+            <h2>Stock: ${symbol}</h2>
+            <p><strong>Time:</strong> ${quote.time}</p>
+            <p><strong>Open:</strong> ${quote.open}</p>
+            <p><strong>High:</strong> ${quote.high}</p>
+            <p><strong>Low:</strong> ${quote.low}</p>
+            <p><strong>Price:</strong> ${quote.price}</p>
+            <p><strong>Volume:</strong> ${quote.volume}</p>
+        `;
+    } catch (error) {
+        document.getElementById('stock-data').innerHTML = `<p>Error: ${error.message}</p>`;
+        console.error('Error fetching stock data:', error);
     }
 });

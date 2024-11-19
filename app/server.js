@@ -1,10 +1,11 @@
-const yahooFinance = require("./services/yahooFinance.js");
+
+const yahooFinance = require("./services/yahooFinance.js"); 
+
 
 // make this script's dir the cwd
 // b/c npm run start doesn't cd into src/ to run this
 // and if we aren't in its cwd, all relative paths will break
 process.chdir(__dirname);
-
 
 
 let express = require("express");
@@ -226,8 +227,25 @@ app.get("/private", authorize, (req, res) => {
 
 
 
+app.get("/dashboard", authorize, (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");  // Serve the dashboard HTML
+});
 
+// Fetch stock data from Yahoo Finance API
+app.get("/api/stock/:symbol", async (req, res) => {
+  const stockSymbol = req.params.symbol.toUpperCase();  // Get the symbol from the URL parameter
 
+  try {
+    const stockData = await yahooFinance.getStockPrice(stockSymbol);  // Assuming this service fetches stock data
+    if (!stockData) {
+      return res.status(404).json({ error: "Stock not found" });
+    }
+    return res.json(stockData);
+  } catch (error) {
+    console.error("Error fetching stock data:", error);
+    return res.status(500).json({ error: "An error occurred while fetching stock data" });
+  }
+});
 
 
 

@@ -1,18 +1,43 @@
-const axios = require('axios');
-
 const config = require('../../env.json');
 
-axios.get('https://yahoo-finance166.p.rapidapi.com/api/news/list-by-symbol', {
-  params: { s: 'AAPL,GOOGL,TSLA', region: 'US', snippetCount: 500 },
-  headers: {
-    'X-RapidAPI-Key': config.RAPIDAPI_KEY,
-    'X-RapidAPI-Host': 'yahoo-finance166.p.rapidapi.com'
+const axios = require("axios");
+
+
+const BASE_URL = "https://www.alphavantage.co/query";
+
+// Function to fetch stock price data
+async function getStockPrice(symbol) {
+  try {
+    const params = {
+      function: "GLOBAL_QUOTE",
+      symbol: symbol,
+      apikey: "OEY8W7DT39AXZ2RV",
+    };
+
+    const response = await axios.get(BASE_URL, { params });
+    const data = response.data;
+
+    if (!data || !data["Global Quote"]) {
+      throw new Error(`No data found for ${symbol} or error in API call.`);
+    }
+
+    const quote = data["Global Quote"];
+    return {
+      symbol: symbol,
+      time: quote["07. latest trading day"], // Date of the latest trading session
+      open: quote["02. open"],
+      high: quote["03. high"],
+      low: quote["04. low"],
+      price: quote["05. price"], // Current price
+      volume: quote["06. volume"],
+    };
+  } catch (error) {
+    console.error("Error fetching stock data from Alpha Vantage:", error.message);
+    throw error;
   }
-})
-.then(response => {
-  console.log(response.data);
-  //console.log(JSON.stringify(response.data, null, 2));
-})
-.catch(error => {
-  console.error(error);
-});
+}
+
+
+module.exports = {
+  getStockPrice
+};
