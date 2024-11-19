@@ -10,5 +10,8 @@
     "cookie-parser": "^1.4.7",
     "express": "^4.21.1",
     "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.5.9"
   }
 }
