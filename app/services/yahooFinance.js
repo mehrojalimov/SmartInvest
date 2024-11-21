@@ -12,7 +12,7 @@ async function getStockPrice(symbol) {
       function: "GLOBAL_QUOTE",
       symbol: symbol,
       // NEED HELP TO HARDCODE THIS API!!!
-      apikey: "OEY8W7DT39AXZ2RV",
+      apikey: config.ALPHA_VANTAGE_API_KEY,
     };
 
     const response = await axios.get(BASE_URL, { params });
