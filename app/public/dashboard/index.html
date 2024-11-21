@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Prices</title>
+    <title>Stock Tracker with Buy/Sell</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,15 +14,56 @@
         #stock-data {
             margin-top: 20px;
         }
+
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ccc;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        .action-button {
+            cursor: pointer;
+            color: white;
+            background-color: red;
+            border: none;
+            padding: 5px 10px;
+        }
     </style>
 </head>
 
 <body>
-    <h1>Stock Price Tracker</h1>
+    <h1>Stock Tracker with Buy/Sell</h1>
     <label for="symbol">Enter Stock Symbol:</label>
     <input type="text" id="symbol" placeholder="AAPL">
     <button id="fetch-data">Get Stock Prices</button>
+    <button id="buy-stock">Buy Stock</button>
     <div id="stock-data"></div>
+
+    <h2>Purchased Stocks</h2>
+    <table id="stock-table">
+        <thead>
+            <tr>
+                <th>Stock Name</th>
+                <th>Price</th>
+                <th>Date of Purchase</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
 
     <script src="./script.js"></script>
 </body>
