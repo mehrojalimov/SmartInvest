@@ -1,3 +1,7 @@
+
+
+const stockTableBody = document.getElementById('table-body');
+
 document.getElementById('fetch-data').addEventListener('click', async () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
     if (!symbol) {
@@ -15,7 +19,7 @@ document.getElementById('fetch-data').addEventListener('click', async () => {
             throw new Error(data.message || `No data found for ${symbol} or error in API call.`);
         }
 
-        const quote = data;  // Assuming data is directly the quote object
+        const quote = data; // Assuming data is directly the quote object
 
         // Display stock data
         document.getElementById('stock-data').innerHTML = `
@@ -32,3 +36,34 @@ document.getElementById('fetch-data').addEventListener('click', async () => {
         console.error('Error fetching stock data:', error);
     }
 });
+
+document.getElementById('buy-stock').addEventListener('click', () => {
+    const symbol = document.getElementById('symbol').value.toUpperCase();
+    if (!symbol) {
+        alert('Please enter a stock symbol!');
+        return;
+    }
+
+    const priceElement = document.querySelector('#stock-data p:nth-child(6)'); // 6th <p> contains the price
+    const stockPrice = priceElement?.textContent.split(': ')[1];
+    if (!stockPrice) {
+        alert('Fetch stock data first to retrieve the price!');
+        return;
+    }
+
+    const purchaseDate = new Date().toLocaleString();
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${symbol}</td>
+        <td>${stockPrice}</td>
+        <td>${purchaseDate}</td>
+        <td><button class="action-button" onclick="deleteRow(this)">Sell</button></td>
+    `;
+    stockTableBody.appendChild(row);
+});
+
+function deleteRow(button) {
+    const row = button.parentNode.parentNode;
+    stockTableBody.removeChild(row);
+}

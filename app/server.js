@@ -231,7 +231,7 @@ app.get("/dashboard", authorize, (req, res) => {
   res.sendFile(__dirname + "/public/index.html");  // Serve the dashboard HTML
 });
 
-// Fetch stock data from Alphadvantage API
+// Fetch stock data from Yahoo Finance API
 app.get("/api/stock/:symbol", async (req, res) => {
   const stockSymbol = req.params.symbol.toUpperCase();  // Get the symbol from the URL parameter
 
@@ -246,6 +246,7 @@ app.get("/api/stock/:symbol", async (req, res) => {
     return res.status(500).json({ error: "An error occurred while fetching stock data" });
   }
 });
+
 
 
 
