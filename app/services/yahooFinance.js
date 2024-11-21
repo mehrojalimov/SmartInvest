@@ -11,6 +11,7 @@ async function getStockPrice(symbol) {
     const params = {
       function: "GLOBAL_QUOTE",
       symbol: symbol,
+      // NEED HELP TO HARDCODE THIS API!!!
       apikey: "OEY8W7DT39AXZ2RV",
     };
 
