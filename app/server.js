@@ -15,7 +15,7 @@ let cookieParser = require("cookie-parser");
 let crypto = require("crypto");
 let env = require("../env.json");
 
-let hostname = "localhost";
+let hostname;
 let port = 3000;
 
 /*****************************************************************************************************************
