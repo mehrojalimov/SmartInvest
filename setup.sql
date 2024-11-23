@@ -1,6 +1,6 @@
-DROP DATABASE IF EXISTS accounts;
-CREATE DATABASE accounts;
-\c accounts
+DROP DATABASE IF EXISTS smartinvest;
+CREATE DATABASE smartinvest;
+\c smartinvest
 DROP TABLE IF EXISTS users;
 CREATE TABLE users(
 	id SERIAL PRIMARY KEY,
@@ -9,12 +9,11 @@ CREATE TABLE users(
 );
 
 DROP TABLE IF EXISTS stocks;
-CREATE TABLE stocks(
+CREATE TABLE stocks (
     stock_id SERIAL PRIMARY KEY,
-    stock_name VARCHAR(100),
-    stock_date DATE,
-    stock_value INT(50)
-
+    stock_name VARCHAR(100) NOT NULL,
+    stock_date DATE NOT NULL,
+    stock_value NUMERIC(10, 2) NOT NULL
 );
 
-
+\q

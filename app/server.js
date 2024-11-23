@@ -1,5 +1,5 @@
 
-const yahooFinance = require("./services/yahooFinance.js"); 
+const alphavantage = require("./services/alphAdvantage.js"); 
 
 
 // make this script's dir the cwd
@@ -15,7 +15,7 @@ let cookieParser = require("cookie-parser");
 let crypto = require("crypto");
 let env = require("../env.json");
 
-let hostname = "localhost";
+let hostname;
 let port = 3000;
 
 /*****************************************************************************************************************
@@ -236,7 +236,7 @@ app.get("/api/stock/:symbol", async (req, res) => {
   const stockSymbol = req.params.symbol.toUpperCase();  // Get the symbol from the URL parameter
 
   try {
-    const stockData = await yahooFinance.getStockPrice(stockSymbol);  // Assuming this service fetches stock data
+    const stockData = await alphavantage.getStockPrice(stockSymbol);  // Assuming this service fetches stock data
     if (!stockData) {
       return res.status(404).json({ error: "Stock not found" });
     }
@@ -246,6 +246,7 @@ app.get("/api/stock/:symbol", async (req, res) => {
     return res.status(500).json({ error: "An error occurred while fetching stock data" });
   }
 });
+
 
 
 

@@ -1,3 +1,4 @@
+
 const stockTableBody = document.getElementById('table-body');
 
 document.getElementById('fetch-data').addEventListener('click', async () => {
