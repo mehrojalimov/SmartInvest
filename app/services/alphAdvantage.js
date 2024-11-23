@@ -11,11 +11,7 @@ async function getStockPrice(symbol) {
     const params = {
       function: "GLOBAL_QUOTE",
       symbol: symbol,
-<<<<<<< HEAD:app/services/yahooFinance.js
       apikey: config.ALPHA_VANTAGE_API_KEY,
-=======
-      apikey: config.ALPHADVANTAGE_KEY
->>>>>>> 637b7c3a304faa63b5ea6eeb3ef3b8924c480893:app/services/alphAdvantage.js
     };
 
     const response = await axios.get(BASE_URL, { params });
