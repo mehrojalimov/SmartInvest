@@ -15,7 +15,7 @@ let cookieParser = require("cookie-parser");
 let crypto = require("crypto");
 let env = require("../env.json");
 
-let hostname;
+let host;
 let port = 3000;
 
 /*****************************************************************************************************************
@@ -250,6 +250,6 @@ app.get("/api/stock/:symbol", async (req, res) => {
 
 
 
-app.listen(port, hostname, () => {
-  console.log(`http://${hostname}:${port}`);
+app.listen(port, host, () => {
+  console.log(`http://${host}:${port}`);
 });
