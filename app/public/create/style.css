@@ -24,7 +24,7 @@ body {
 .create-container:hover {
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
 }
-.create-container h1 {
+.create-container h2 {
     font-size: 24px;
     color: #4CAF50;
     margin-bottom: 20px;
