@@ -1,16 +1,24 @@
 
 @import url("https://fonts.googleapis.com/css?family=Fira+Sans");
 
-html,body {
-	position: relative;
-	min-height: 100vh;
-	background: linear-gradient(-135deg, #2EB086,black, #B8405E);
-	display: flex;
-	align-items: center;
-	justify-content: center;
+body {
 	font-family: "Fira Sans", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	background: linear-gradient(-135deg, #2EB086,black, #B8405E);
+}
+
+
+h1 {
+    text-align: center;
+    margin: 0; /* Removes default margin for better centering */
+    color: white;
+}
+.container {
+    height: 200vh; 
+    width: 100%; 
+    overflow: hidden;
+	display: flex;
+    justify-content: center; /* Centers horizontally */
+    align-items: center;
 }
 
 .form-structor {
@@ -20,6 +28,7 @@ html,body {
 	width: 350px;
 	position: relative;
 	overflow: hidden;
+	margin: auto;
 	
 	&::after {
 		content: '';
