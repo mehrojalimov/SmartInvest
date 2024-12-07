@@ -9,6 +9,10 @@ const loginErrorMessage = document.getElementById('loginErrorMessage');
 
 loginBtn.addEventListener('click', (e) => {
 	let parent = e.target.parentNode.parentNode;
+  
+  signupErrorMessage.style.display = "none";
+  signupErrorMessage.textContent = "";
+
 	Array.from(e.target.parentNode.parentNode.classList).find((element) => {
 		if(element !== "slide-up") {
 			parent.classList.add('slide-up')
@@ -21,6 +25,12 @@ loginBtn.addEventListener('click', (e) => {
 
 signupBtn.addEventListener('click', (e) => {
 	let parent = e.target.parentNode;
+
+  loginErrorMessage.style.display = "none";
+  loginErrorMessage.textContent = "";
+
+
+
 	Array.from(e.target.parentNode.classList).find((element) => {
 		if(element !== "slide-up") {
 			parent.classList.add('slide-up')
@@ -40,8 +50,8 @@ submitSignupBtn.addEventListener('click', async (e) => {
   signupErrorMessage.textContent = "";
   
       // Basic client-side validation
-  if (username.length < 3 || username.length > 20) {
-    signupErrorMessage.textContent = "Username must be between 3 and 20 characters.";
+  if (username.length < 5 || username.length > 20) {
+    signupErrorMessage.textContent = "Username must be between 5 and 20 characters.";
     signupErrorMessage.style.display = "block";
     return;
   }
@@ -66,6 +76,7 @@ submitSignupBtn.addEventListener('click', async (e) => {
           // Display an error message if login failed
       const errorData = await response.json();
       signupErrorMessage.textContent = `Error: ${errorData.error || "Invalid credentials"}`;
+      loginErrorMessage.style.display = "block";
     }
   } catch (error) {
         // Catch network errors or other unexpected errors
@@ -84,6 +95,7 @@ submitLoginBtn.addEventListener('click', async (e) => {
       // Basic client-side validation
   if (!username || !password) {
     loginErrorMessage.textContent = "Please enter both username and password.";
+    loginErrorMessage.style.display = "block";
     return;
   }
 
@@ -102,6 +114,7 @@ submitLoginBtn.addEventListener('click', async (e) => {
       // Display an error message if login failed
       const errorData = await response.json();
       loginErrorMessage.textContent = `Error: ${errorData.error || "Invalid credentials"}`;
+      loginErrorMessage.style.display = "block";
     }
   } catch (error) {
     console.error("Error during login:", error);

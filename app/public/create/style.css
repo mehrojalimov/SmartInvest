@@ -1,31 +1,55 @@
 
 @import url("https://fonts.googleapis.com/css?family=Fira+Sans");
 
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 body {
 	font-family: "Fira Sans", Helvetica, Arial, sans-serif;
 	background: linear-gradient(-135deg, #2EB086,black, #B8405E);
+	display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+	animation: fadeIn 1s ease-in-out;
 }
 
 
 h1 {
     text-align: center;
-    margin: 0; /* Removes default margin for better centering */
+    margin: 0;
     color: white;
+	margin-bottom: 30px;
+	
 }
 .container {
     height: 200vh; 
     width: 100%; 
-    overflow: hidden;
-	display: flex;
-    justify-content: center; /* Centers horizontally */
-    align-items: center;
+	animation: fadeSlideIn 0.5s ease-in-out forwards;
 }
 
 .form-structor {
 	background: rgba(255, 255, 255, 0.2);
 	border-radius: 15px;
-	height: 550px;
-	width: 350px;
+	height: 450px;
+	width: 300px;
 	position: relative;
 	overflow: hidden;
 	margin: auto;
