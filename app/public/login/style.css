@@ -5,12 +5,12 @@
 }
 body {
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #4CAF50, #2a9d8f);
+    background: linear-gradient(-135deg, #2EB086,black, #B8405E);
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100vh;
-    color: #333;
+    color: whitesmoke;
 }
 .login-container {
     width: 350px;
@@ -35,7 +35,7 @@ body {
 }
 .form-group label {
     font-weight: 600;
-    color: #555;
+    color: whitesmoke;
     margin-bottom: 5px;
     display: block;
 }

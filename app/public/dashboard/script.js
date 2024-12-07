@@ -19,11 +19,11 @@ document.getElementById('fetch-data').addEventListener('click', async () => {
         document.getElementById('stock-data').innerHTML = `
             <h2>Stock: ${symbol}</h2>
             <p><strong>Time:</strong> ${quote.time}</p>
-            <p><strong>Open:</strong> ${quote.open}</p>
-            <p><strong>High:</strong> ${quote.high}</p>
-            <p><strong>Low:</strong> ${quote.low}</p>
-            <p><strong>Price:</strong> ${quote.price}</p>
-            <p><strong>Volume:</strong> ${quote.volume}</p>
+            <p><strong>Open:</strong> $${parseFloat(quote.open).toFixed(2)}</p>
+            <p><strong>High:</strong> $${parseFloat(quote.high).toFixed(2)}</p>
+            <p><strong>Low:</strong> $${parseFloat(quote.low).toFixed(2)}</p>
+            <p><strong>Price:</strong> $${parseFloat(quote.price).toFixed(2)}</p>
+            <p><strong>Volume:</strong> ${quote.volume.toLocaleString()}</p>
         `;
     } catch (error) {
         document.getElementById('stock-data').innerHTML = `<p>Error: ${error.message}</p>`;
@@ -72,7 +72,7 @@ document.getElementById('buy-stock').addEventListener('click', () => {
         return;
     }
     const priceElement = document.querySelector('#stock-data p:nth-child(6)');
-    const stockPrice = parseFloat(priceElement?.textContent.split(': ')[1]);
+    const stockPrice = parseFloat(priceElement?.textContent.split('$')[1]);
     if (!stockPrice) {
         alert('Fetch stock data first to retrieve the price!');
         return;
