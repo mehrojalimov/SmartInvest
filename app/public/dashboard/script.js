@@ -60,6 +60,44 @@ async function fetchCurrentPrice(symbol) {
     }
 }
 
+async function buyStock() {
+    const stockSymbol = document.getElementById("stockSymbol").value;
+    const amount = document.getElementById("buyAmount").value;
+  
+    await fetch("/api/portfolio/transaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        stock_name: stockSymbol,
+        transaction_type: "BUY",
+        quantity: amount
+      }),
+    });
+  
+    alert("Stock bought successfully!");
+    fetchPortfolio(); // Refresh portfolio
+  }
+
+  async function fetchPortfolio() {
+    const response = await fetch("/api/portfolio");
+    const data = await response.json();
+  
+    const table = document.getElementById("purchasedStocksTable");
+    table.innerHTML = "";
+  
+    data.portfolio.forEach(stock => {
+      table.innerHTML += `
+        <tr>
+          <td>${stock.stock_name}</td>
+          <td>${stock.total_quantity}</td>
+        </tr>
+      `;
+    });
+  }
+  
+  window.onload = fetchPortfolio;
+  
+
 function updateTotalAssetsDisplay() {
     document.getElementById('total-assets').innerText = `Total Assets: $${totalAssets.toFixed(2)}`;
 }
