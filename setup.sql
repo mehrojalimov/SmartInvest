@@ -16,4 +16,17 @@ CREATE TABLE stocks (
     stock_value NUMERIC(10, 2) NOT NULL
 );
 
+-- Portfolio Table
+DROP TABLE IF EXISTS portfolio;
+CREATE TABLE portfolio (
+    portfolio_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id),
+    stock_id INT REFERENCES stocks(stock_id),
+    transaction_type VARCHAR(10) CHECK (transaction_type IN ('BUY', 'SELL')),
+    quantity INT NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
 \q
