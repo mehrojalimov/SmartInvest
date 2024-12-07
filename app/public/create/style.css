@@ -1,3 +1,5 @@
+
+
 @import url("https://fonts.googleapis.com/css?family=Fira+Sans");
 
 @keyframes fadeIn {
@@ -20,25 +22,38 @@
     }
 }
 
-html,body {
-	position: relative;
-	min-height: 100vh;
+body {
+	font-family: "Fira Sans", Helvetica, Arial, sans-serif;
 	background: linear-gradient(-135deg, #2EB086,black, #B8405E);
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-family: "Fira Sans", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+	animation: fadeIn 1s ease-in-out;
+}
+
+
+h1 {
+    text-align: center;
+    margin: 0;
+    color: white;
+	margin-bottom: 30px;
+	
+}
+.container {
+    height: 200vh; 
+    width: 100%; 
+	animation: fadeSlideIn 0.5s ease-in-out forwards;
 }
 
 .form-structor {
-	background-color: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.2);
 	border-radius: 15px;
-	height: 550px;
-	width: 350px;
+	height: 450px;
+	width: 300px;
 	position: relative;
 	overflow: hidden;
+	margin: auto;
 	
 	&::after {
 		content: '';
@@ -48,7 +63,7 @@ html,body {
 		background-repeat: no-repeat;
 		background-position: left bottom;
 		background-size: 500px;
-	}
+    }
 	
 	.signup {
 		position: absolute;
@@ -284,7 +299,6 @@ html,body {
 		}
 	}
 }
-
 .error-message {
     color: red;
     font-size: 14px;
