@@ -9,17 +9,13 @@ const BASE_URL = "https://www.alphavantage.co/query";
 async function getStockPrice(symbol) {
   try {
     const params = {
-      function: "GLOBAL_QUOTE", 
+      function: "GLOBAL_QUOTE",
       symbol: symbol,
       apikey: config.ALPHA_VANTAGE_API_KEY,
     };
-    
+
     const response = await axios.get(BASE_URL, { params });
     const data = response.data;
-    
-    if (data["Information"].includes("daily rate limits")) {
-      throw new Error(`API Limit Reached`);
-    }
 
     if (!data || !data["Global Quote"]) {
       throw new Error(`No data found for ${symbol} or error in API call.`);

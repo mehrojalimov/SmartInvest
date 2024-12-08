@@ -60,44 +60,6 @@ async function fetchCurrentPrice(symbol) {
     }
 }
 
-async function buyStock() {
-    const stockSymbol = document.getElementById("stockSymbol").value;
-    const amount = document.getElementById("buyAmount").value;
-  
-    await fetch("/api/portfolio/transaction", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        stock_name: stockSymbol,
-        transaction_type: "BUY",
-        quantity: amount
-      }),
-    });
-  
-    alert("Stock bought successfully!");
-    fetchPortfolio(); // Refresh portfolio
-  }
-
-  async function fetchPortfolio() {
-    const response = await fetch("/api/portfolio");
-    const data = await response.json();
-  
-    const table = document.getElementById("purchasedStocksTable");
-    table.innerHTML = "";
-  
-    data.portfolio.forEach(stock => {
-      table.innerHTML += `
-        <tr>
-          <td>${stock.stock_name}</td>
-          <td>${stock.total_quantity}</td>
-        </tr>
-      `;
-    });
-  }
-  
-  window.onload = fetchPortfolio;
-  
-
 function updateTotalAssetsDisplay() {
     document.getElementById('total-assets').innerText = `Total Assets: $${totalAssets.toFixed(2)}`;
 }
@@ -140,40 +102,19 @@ document.getElementById('sell-stock').addEventListener('click', () => {
     const currentPrice = parseFloat(row.cells[2].innerText.slice(1)); // Remove $
     const sharesToSell = amount / currentPrice;
     const currentShares = parseFloat(row.cells[1].innerText);
-
     if (currentShares < sharesToSell) {
         alert('Not enough shares to sell!');
         return;
     }
-
     const remainingShares = currentShares - sharesToSell;
     cashBalance += amount;
     updateCashDisplay();
-
     if (remainingShares <= 0) {
-        row.parentNode.removeChild(row); // Remove row if no shares are left
+        row.parentNode.removeChild(row);
     } else {
         row.cells[1].innerText = remainingShares.toFixed(2);
     }
-
-    updateTotalAssets(); // Update total assets after the sell
 });
-
-
-async function updateTotalAssets() {
-    let newTotalAssets = 0;
-    const rows = document.querySelectorAll('#stock-table tbody tr');
-    for (const row of rows) {
-        const symbol = row.cells[0].innerText;
-        const shares = parseFloat(row.cells[1].innerText);
-        const currentPrice = await fetchCurrentPrice(symbol);
-        const assetValue = shares * currentPrice;
-        newTotalAssets += assetValue;
-    }
-    totalAssets = newTotalAssets;
-    updateTotalAssetsDisplay();
-}
-
 
 function updateCashDisplay() {
     document.getElementById('cash-display').innerText = `Cash Balance: $${cashBalance.toFixed(2)}`;
@@ -209,31 +150,24 @@ function findRow(symbol) {
 }
 
 function sellStock(button, symbol) {
-    const row = button.parentNode.parentNode; // Get the table row for the stock
-    const currentPrice = parseFloat(row.cells[2].innerText.slice(1)); // Parse the stock price, removing "$"
-    const currentShares = parseFloat(row.cells[1].innerText); // Parse the volume (shares)
-
-    if (isNaN(currentPrice) || isNaN(currentShares)) {
-        alert('Invalid stock data. Please ensure the stock information is correct.');
+    const amount = parseFloat(document.getElementById('sell-amount').value);
+    const row = button.parentNode.parentNode;
+    const currentPrice = parseFloat(row.cells[2].innerText.slice(1)); // Remove $
+    const sharesToSell = amount / currentPrice;
+    const currentShares = parseFloat(row.cells[1].innerText);
+    if (currentShares < sharesToSell) {
+        alert('Not enough shares to sell!');
         return;
     }
-
-    // Calculate the total sell value
-    const totalSellValue = currentShares * currentPrice;
-
-    // Update cash balance
-    cashBalance += totalSellValue;
+    const remainingShares = currentShares - sharesToSell;
+    cashBalance += amount;
     updateCashDisplay();
-
-    // Remove the row from the table
-    row.parentNode.removeChild(row);
-
-    // Recalculate total assets after selling
-    updateTotalAssets();
-
-    alert(`Successfully sold all shares of ${symbol} for $${totalSellValue.toFixed(2)}.`);
+    if (remainingShares <= 0) {
+        row.parentNode.removeChild(row);
+    } else {
+        row.cells[1].innerText = remainingShares.toFixed(2);
+    }
 }
 
 updateCashDisplay(); // Initial display update
 updateTotalAssetsDisplay(); // Initialize total assets display
-
