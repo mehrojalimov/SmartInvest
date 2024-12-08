@@ -1,5 +1,49 @@
 let cashBalance = 1000; // Starting cash balance
 let totalAssets = 0; // Starting total assets
+let portfolioHistory = []; // Array to store portfolio value over time
+let dates = []; // Array to store dates for the x-axis of the chart
+
+function updatePortfolioChart() {
+    const totalPortfolioValue = totalAssets; // Total portfolio value including cash and assets
+    const today = new Date().toLocaleDateString(); // Get today's date
+
+    // Check if the current date already has a record
+    const lastIndex = dates.length - 1;
+    if (lastIndex === -1 || dates[lastIndex] !== today) {
+        // If no record for today, add a new entry
+        dates.push(today);
+        portfolioHistory.push(totalPortfolioValue);
+    } else {
+        // Update today's value to reflect any transactions or price changes
+        portfolioHistory[lastIndex] = totalPortfolioValue;
+    }
+
+    // Update the chart with new data
+    portfolioChart.data.labels = dates;
+    portfolioChart.data.datasets.forEach((dataset) => {
+        dataset.data = portfolioHistory;
+    });
+    portfolioChart.update();
+}
+
+
+
+async function endOfDayUpdate() {
+    // Function to simulate end of day update based on market close prices
+    let newTotalAssets = 0;
+    const rows = document.querySelectorAll('#stock-table tbody tr');
+    for (const row of rows) {
+        const symbol = row.cells[0].innerText;
+        const currentPrice = await fetchCurrentPrice(symbol); // Fetch the closing price for the day
+        const shares = parseFloat(row.cells[1].innerText);
+        newTotalAssets += shares * currentPrice;
+    }
+    totalAssets = newTotalAssets;
+    updateTotalAssetsDisplay();
+    updatePortfolioChart(); // Update the chart at the end of the day with the new asset value
+}
+
+
 
 
 document.getElementById('fetch-data').addEventListener('click', async () => {
@@ -100,6 +144,7 @@ async function buyStock() {
 
 function updateTotalAssetsDisplay() {
     document.getElementById('total-assets').innerText = `Total Assets: $${totalAssets.toFixed(2)}`;
+    updatePortfolioChart();
 }
 
 document.getElementById('buy-stock').addEventListener('click', () => {
@@ -123,6 +168,8 @@ document.getElementById('buy-stock').addEventListener('click', () => {
     cashBalance -= amount;
     updateCashDisplay();
     addOrUpdateRow(symbol, numberShares, stockPrice);
+
+    updatePortfolioChart();
 });
 
 document.getElementById('sell-stock').addEventListener('click', () => {
@@ -157,6 +204,9 @@ document.getElementById('sell-stock').addEventListener('click', () => {
     }
 
     updateTotalAssets(); // Update total assets after the sell
+
+    updatePortfolioChart(); // Update the chart
+
 });
 
 
@@ -234,5 +284,45 @@ function sellStock(button, symbol) {
     alert(`Successfully sold all shares of ${symbol} for $${totalSellValue.toFixed(2)}.`);
 }
 
-updateCashDisplay(); // Initial display update
-updateTotalAssetsDisplay(); // Initialize total assets display
+const ctx = document.getElementById('portfolioChart').getContext('2d');
+const portfolioChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: dates,
+        datasets: [
+            {
+                label: 'Portfolio Value ($)',
+                data: portfolioHistory,
+                borderColor: 'blue',
+                tension: 0.3,
+                fill: false,
+            },
+        ],
+    },
+    options: {
+        responsive: true,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date',
+                },
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Portfolio Value ($)',
+                },
+                beginAtZero: false,
+            },
+        },
+    },
+});
+
+
+window.onload = () => {
+    fetchPortfolio();
+    updateCashDisplay(); // Initial display update
+    updateTotalAssetsDisplay();
+    updatePortfolioChart(); // Initial chart display when page loads
+};

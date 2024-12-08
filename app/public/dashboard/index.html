@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Invest</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Include Chart.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -46,6 +48,8 @@
     </table>
     <div id="total-assets">Total Assets: $0.00</div>
     <button id="update-assets">Update Total Assets</button>
+    <h3>Portfolio Performance</h3>
+    <canvas id="portfolioChart" style="width:100%;max-width:600px;height:auto;"></canvas>
     <script src="./script.js"></script>
 </body>
 
