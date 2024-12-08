@@ -225,13 +225,11 @@ app.get("/private", authorize, (req, res) => {
   return res.send("A private message\n");
 });
 
-
-
 app.get("/dashboard", authorize, (req, res) => {
   res.sendFile(__dirname + "/public/index.html");  // Serve the dashboard HTML
 });
 
-// Fetch stock data from Yahoo Finance API
+// Fetch stock data from Alphadvantage API
 app.get("/api/stock/:symbol", async (req, res) => {
   const stockSymbol = req.params.symbol.toUpperCase();  // Get the symbol from the URL parameter
 
@@ -246,60 +244,6 @@ app.get("/api/stock/:symbol", async (req, res) => {
     return res.status(500).json({ error: "An error occurred while fetching stock data" });
   }
 });
-
-  // Save stock to database
-  app.post('/api/stock', async (req, res) => {
-    const { stock_name, stock_date, stock_value } = req.body;
-    try {
-        await pool.query(
-            `INSERT INTO stocks (stock_name, stock_date, stock_value)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (stock_name, stock_date) DO UPDATE 
-            SET stock_value = EXCLUDED.stock_value`,
-            [stock_name, stock_date, stock_value]
-        );
-        res.status(200).send('Stock data saved successfully.');
-    } catch (error) {
-        console.error('Error saving stock data:', error);
-        res.status(500).send('Error saving stock data.');
-    }
-  });
-
-  // Retrieve all stocks
-  app.get('/api/stocks', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM stocks');
-        res.json(result.rows);
-    } catch (error) {
-        console.error('Error fetching stocks:', error);
-        res.status(500).send('Error fetching stocks.');
-    }
-  });
-
-  app.post("/api/portfolio/transaction", authorize, async (req, res) => {
-    const { stock_name, transaction_type, quantity } = req.body;
-    const username = tokenStorage[req.cookies.token];
-
-    try {
-      const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
-      if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
-
-      const user_id = userResult.rows[0].id;
-
-      // Insert transaction into the portfolio
-      await pool.query(
-        `INSERT INTO portfolio (user_id, stock_id, transaction_type, quantity, transaction_date)
-        VALUES ($1, (SELECT stock_id FROM stocks WHERE stock_name = $2), $3, $4, CURRENT_TIMESTAMP)`,
-        [user_id, stock_name, transaction_type, quantity]
-      );
-
-      res.status(200).json({ message: "Transaction saved successfully" });
-    } catch (error) {
-      console.error("Error saving transaction:", error.message);
-      res.status(500).json({ error: "Failed to save transaction" });
-    }
-  });
-
 
   app.get("/api/portfolio", authorize, async (req, res) => {
     const username = tokenStorage[req.cookies.token];
@@ -329,9 +273,60 @@ app.get("/api/stock/:symbol", async (req, res) => {
   });
 
 
+  app.post("/api/portfolio/transaction", authorize, async (req, res) => {
+      const { stock_name, transaction_type, quantity } = req.body;
+      const username = tokenStorage[req.cookies.token];
+  
+      try {
+        const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
+        if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+  
+        const user_id = userResult.rows[0].id;
+  
+        // Insert transaction into the portfolio
+        await pool.query(
+          `INSERT INTO portfolio (user_id, stock_id, transaction_type, quantity, transaction_date)
+          VALUES ($1, (SELECT stock_id FROM stocks WHERE stock_name = $2), $3, $4, CURRENT_TIMESTAMP)`,
+          [user_id, stock_name, transaction_type, quantity]
+        );
+  
+        res.status(200).json({ message: "Transaction saved successfully" });
+      } catch (error) {
+        console.error("Error saving transaction:", error.message);
+        res.status(500).json({ error: "Failed to save transaction" });
+      }
+    });
 
+  // Retrieve all stocks
+  // app.get('/api/stocks', async (req, res) => {
+  //   try {
+  //       const result = await pool.query('SELECT * FROM stocks');
+  //       res.json(result.rows);
+  //   } catch (error) {
+  //       console.error('Error fetching stocks:', error);
+  //       res.status(500).send('Error fetching stocks.');
+  //   }
+  // });
 
-
-app.listen(port, host, () => {
+  // Save stock to database
+  // app.post('/api/stock', async (req, res) => {
+  //   const { stock_name, stock_date, stock_value } = req.body;
+  //   try {
+  //       await pool.query(
+  //           `INSERT INTO stocks (stock_name, stock_date, stock_value)
+  //           VALUES ($1, $2, $3)
+  //           ON CONFLICT (stock_name, stock_date) DO UPDATE 
+  //           SET stock_value = EXCLUDED.stock_value`,
+  //           [stock_name, stock_date, stock_value]
+  //       );
+  //       res.status(200).send('Stock data saved successfully.');
+  //   } catch (error) {
+  //       console.error('Error saving stock data:', error);
+  //       res.status(500).send('Error saving stock data.');
+  //   }
+  // });
+  
+  
+  app.listen(port, host, () => {
   console.log(`http://${host}:${port}`);
 });

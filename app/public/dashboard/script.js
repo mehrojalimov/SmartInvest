@@ -3,48 +3,28 @@ let totalAssets = 0; // Starting total assets
 let portfolioHistory = []; // Array to store portfolio value over time
 let dates = []; // Array to store dates for the x-axis of the chart
 
-function updatePortfolioChart() {
-    const totalPortfolioValue = totalAssets; // Total portfolio value including cash and assets
-    const today = new Date().toLocaleDateString(); // Get today's date
 
-    // Check if the current date already has a record
-    const lastIndex = dates.length - 1;
-    if (lastIndex === -1 || dates[lastIndex] !== today) {
-        // If no record for today, add a new entry
-        dates.push(today);
-        portfolioHistory.push(totalPortfolioValue);
-    } else {
-        // Update today's value to reflect any transactions or price changes
-        portfolioHistory[lastIndex] = totalPortfolioValue;
-    }
-
-    // Update the chart with new data
-    portfolioChart.data.labels = dates;
-    portfolioChart.data.datasets.forEach((dataset) => {
-        dataset.data = portfolioHistory;
+/*************************************************************************************************************
+ *                                     Fetch Stock                                                           *
+ ************************************************************************************************************/
+async function fetchPortfolio() {
+    const response = await fetch("/api/portfolio");
+    const data = await response.json();
+  
+    const table = document.getElementById("purchasedStocksTable");
+    table.innerHTML = "";
+  
+    data.portfolio.forEach(stock => {
+      table.innerHTML += `
+        <tr>
+          <td>${stock.stock_name}</td>
+          <td>${stock.total_quantity}</td>
+        </tr>
+      `;
     });
-    portfolioChart.update();
-}
-
-
-
-async function endOfDayUpdate() {
-    // Function to simulate end of day update based on market close prices
-    let newTotalAssets = 0;
-    const rows = document.querySelectorAll('#stock-table tbody tr');
-    for (const row of rows) {
-        const symbol = row.cells[0].innerText;
-        const currentPrice = await fetchCurrentPrice(symbol); // Fetch the closing price for the day
-        const shares = parseFloat(row.cells[1].innerText);
-        newTotalAssets += shares * currentPrice;
-    }
-    totalAssets = newTotalAssets;
-    updateTotalAssetsDisplay();
-    updatePortfolioChart(); // Update the chart at the end of the day with the new asset value
-}
-
-
-
+  }
+  
+  window.onload = fetchPortfolio;
 
 document.getElementById('fetch-data').addEventListener('click', async () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
@@ -75,19 +55,6 @@ document.getElementById('fetch-data').addEventListener('click', async () => {
     }
 });
 
-document.getElementById('update-assets').addEventListener('click', async () => {
-    let newTotalAssets = 0;
-    const rows = document.querySelectorAll('#stock-table tbody tr');
-    for (const row of rows) {
-        const symbol = row.cells[0].innerText;
-        const shares = parseFloat(row.cells[1].innerText);
-        const currentPrice = await fetchCurrentPrice(symbol);
-        const assetValue = shares * currentPrice;
-        newTotalAssets += assetValue;
-    }
-    totalAssets = newTotalAssets;
-    updateTotalAssetsDisplay();
-});
 
 async function fetchCurrentPrice(symbol) {
     const url = `/api/stock/${symbol}`;
@@ -104,74 +71,113 @@ async function fetchCurrentPrice(symbol) {
     }
 }
 
-async function buyStock() {
-    const stockSymbol = document.getElementById("stockSymbol").value;
-    const amount = document.getElementById("buyAmount").value;
-  
-    await fetch("/api/portfolio/transaction", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        stock_name: stockSymbol,
-        transaction_type: "BUY",
-        quantity: amount
-      }),
-    });
-  
-    alert("Stock bought successfully!");
-    fetchPortfolio(); // Refresh portfolio
-  }
+/*************************************************************************************************************
+ *                                     Buy Stock                                                           *
+ ************************************************************************************************************/
+// Buy stock function
+async function buyStock(symbol, amount) {
+    try {
+        const response = await fetch("/api/portfolio/transaction", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                stock_name: symbol,
+                transaction_type: "BUY",
+                quantity: amount,
+            }),
+        });
 
-  async function fetchPortfolio() {
-    const response = await fetch("/api/portfolio");
-    const data = await response.json();
-  
-    const table = document.getElementById("purchasedStocksTable");
-    table.innerHTML = "";
-  
-    data.portfolio.forEach(stock => {
-      table.innerHTML += `
-        <tr>
-          <td>${stock.stock_name}</td>
-          <td>${stock.total_quantity}</td>
-        </tr>
-      `;
-    });
-  }
-  
-  window.onload = fetchPortfolio;
-  
+        const result = await response.json();
 
-function updateTotalAssetsDisplay() {
-    document.getElementById('total-assets').innerText = `Total Assets: $${totalAssets.toFixed(2)}`;
-    updatePortfolioChart();
+        if (!response.ok) {
+            throw new Error(result.error || "Failed to buy stock");
+        }
+
+        alert("Stock bought successfully!");
+        return result; // Returning result for further updates if needed
+    } catch (error) {
+        console.error("Error buying stock:", error);
+        alert("An error occurred while buying the stock. Please try again.");
+        throw error; // Re-throwing to handle in the calling function if needed
+    }
 }
 
-document.getElementById('buy-stock').addEventListener('click', () => {
-    const symbol = document.getElementById('symbol').value.toUpperCase();
-    const amount = parseFloat(document.getElementById('buy-amount').value);
-    if (!symbol || isNaN(amount) || amount <= 0) {
-        alert('Please enter a valid stock symbol and amount!');
+// Event listener for buying stocks
+document.getElementById("buy-stock").addEventListener("click", async () => {
+    const symbolInput = document.getElementById("symbol");
+    const amountInput = document.getElementById("buy-amount");
+    const priceElement = document.querySelector("#stock-data p:nth-child(6)");
+
+    // Validate inputs
+    const symbol = symbolInput?.value.trim().toUpperCase();
+    const amount = parseFloat(amountInput?.value);
+    const stockPrice = parseFloat(priceElement?.textContent.split("$")[1]);
+
+    if (!symbol) {
+        alert("Please enter a valid stock symbol.");
         return;
     }
-    const priceElement = document.querySelector('#stock-data p:nth-child(6)');
-    const stockPrice = parseFloat(priceElement?.textContent.split('$')[1]);
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount greater than 0.");
+        return;
+    }
+
     if (!stockPrice) {
-        alert('Fetch stock data first to retrieve the price!');
+        alert("Please fetch stock data to retrieve the price.");
         return;
     }
+
+    // Check cash balance
     const numberShares = amount / stockPrice;
     if (cashBalance < amount) {
-        alert('Not enough cash to buy!');
+        alert("Not enough cash to complete the purchase.");
         return;
     }
-    cashBalance -= amount;
-    updateCashDisplay();
-    addOrUpdateRow(symbol, numberShares, stockPrice);
 
-    updatePortfolioChart();
+    try {
+        // Deduct cash and update UI
+        cashBalance -= amount;
+        const result = await buyStock(symbol, amount);
+
+        updateCashDisplay(); // Update displayed cash balance
+        addOrUpdateRow(symbol, numberShares, stockPrice); // Update portfolio row
+        updatePortfolioChart(); // Refresh the portfolio chart
+    } catch (error) {
+        // Error handling if needed
+        console.error("Transaction failed:", error);
+    }
 });
 
+
+/*************************************************************************************************************
+ *                                     Sell Stock                                                           *
+ ************************************************************************************************************/
+function sellStock(button, symbol) {
+    const row = button.parentNode.parentNode; // Get the table row for the stock
+    const currentPrice = parseFloat(row.cells[2].innerText.slice(1)); // Parse the stock price, removing "$"
+    const currentShares = parseFloat(row.cells[1].innerText); // Parse the volume (shares)
+
+    if (isNaN(currentPrice) || isNaN(currentShares)) {
+        alert('Invalid stock data. Please ensure the stock information is correct.');
+        return;
+    }
+
+    // Calculate the total sell value
+    const totalSellValue = currentShares * currentPrice;
+
+    // Update cash balance
+    cashBalance += totalSellValue;
+    updateCashDisplay();
+
+    // Remove the row from the table
+    row.parentNode.removeChild(row);
+
+    // Recalculate total assets after selling
+    updateTotalAssets();
+
+    alert(`Successfully sold all shares of ${symbol} for $${totalSellValue.toFixed(2)}.`);
+}
 document.getElementById('sell-stock').addEventListener('click', () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
     const amount = parseFloat(document.getElementById('sell-amount').value);
@@ -210,6 +216,30 @@ document.getElementById('sell-stock').addEventListener('click', () => {
 });
 
 
+
+/*************************************************************************************************************
+ *                                     Update Data                                                           *
+ ************************************************************************************************************/
+
+document.getElementById('update-assets').addEventListener('click', async () => {
+    let newTotalAssets = 0;
+    const rows = document.querySelectorAll('#stock-table tbody tr');
+    for (const row of rows) {
+        const symbol = row.cells[0].innerText;
+        const shares = parseFloat(row.cells[1].innerText);
+        const currentPrice = await fetchCurrentPrice(symbol);
+        const assetValue = shares * currentPrice;
+        newTotalAssets += assetValue;
+    }
+    totalAssets = newTotalAssets;
+    updateTotalAssetsDisplay();
+});
+
+function updateTotalAssetsDisplay() {
+    document.getElementById('total-assets').innerText = `Total Assets: $${totalAssets.toFixed(2)}`;
+    updatePortfolioChart();
+}
+
 async function updateTotalAssets() {
     let newTotalAssets = 0;
     const rows = document.querySelectorAll('#stock-table tbody tr');
@@ -223,7 +253,6 @@ async function updateTotalAssets() {
     totalAssets = newTotalAssets;
     updateTotalAssetsDisplay();
 }
-
 
 function updateCashDisplay() {
     document.getElementById('cash-display').innerText = `Cash Balance: $${cashBalance.toFixed(2)}`;
@@ -258,32 +287,39 @@ function findRow(symbol) {
     return null;
 }
 
-function sellStock(button, symbol) {
-    const row = button.parentNode.parentNode; // Get the table row for the stock
-    const currentPrice = parseFloat(row.cells[2].innerText.slice(1)); // Parse the stock price, removing "$"
-    const currentShares = parseFloat(row.cells[1].innerText); // Parse the volume (shares)
-
-    if (isNaN(currentPrice) || isNaN(currentShares)) {
-        alert('Invalid stock data. Please ensure the stock information is correct.');
-        return;
+function updatePortfolioChart() {
+    if (dates.length === 0 || portfolioHistory.length === 0) {
+        dates.push(new Date().toLocaleDateString());
+        portfolioHistory.push(totalAssets);
     }
 
-    // Calculate the total sell value
-    const totalSellValue = currentShares * currentPrice;
+    portfolioChart.data.labels = dates;
+    portfolioChart.data.datasets.forEach((dataset) => {
+        dataset.data = portfolioHistory;
+    });
 
-    // Update cash balance
-    cashBalance += totalSellValue;
-    updateCashDisplay();
-
-    // Remove the row from the table
-    row.parentNode.removeChild(row);
-
-    // Recalculate total assets after selling
-    updateTotalAssets();
-
-    alert(`Successfully sold all shares of ${symbol} for $${totalSellValue.toFixed(2)}.`);
+    portfolioChart.update();
 }
 
+async function endOfDayUpdate() {
+    // Function to simulate end of day update based on market close prices
+    let newTotalAssets = 0;
+    const rows = document.querySelectorAll('#stock-table tbody tr');
+    for (const row of rows) {
+        const symbol = row.cells[0].innerText;
+        const currentPrice = await fetchCurrentPrice(symbol); // Fetch the closing price for the day
+        const shares = parseFloat(row.cells[1].innerText);
+        newTotalAssets += shares * currentPrice;
+    }
+    totalAssets = newTotalAssets;
+    updateTotalAssetsDisplay();
+    updatePortfolioChart(); // Update the chart at the end of the day with the new asset value
+}
+
+
+/*************************************************************************************************************
+ *                                     Portfolio Char                                                       *
+ ************************************************************************************************************/
 const ctx = document.getElementById('portfolioChart').getContext('2d');
 const portfolioChart = new Chart(ctx, {
     type: 'line',
