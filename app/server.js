@@ -245,6 +245,60 @@ app.get("/api/stock/:symbol", async (req, res) => {
     console.error("Error fetching stock data:", error);
     return res.status(500).json({ error: "An error occurred while fetching stock data" });
   }
+
+  
+});
+
+app.post("/api/portfolio/transaction", authorize, async (req, res) => {
+  const { stock_name, transaction_type, quantity } = req.body;
+  const username = tokenStorage[req.cookies.token];
+
+  try {
+    const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
+    if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+
+    const user_id = userResult.rows[0].id;
+
+    // Insert transaction into the portfolio
+    await pool.query(
+      `INSERT INTO portfolio (user_id, stock_id, transaction_type, quantity, transaction_date)
+      VALUES ($1, (SELECT stock_id FROM stocks WHERE stock_name = $2), $3, $4, CURRENT_TIMESTAMP)`,
+      [user_id, stock_name, transaction_type, quantity]
+    );
+
+    res.status(200).json({ message: "Transaction saved successfully" });
+  } catch (error) {
+    console.error("Error saving transaction:", error.message);
+    res.status(500).json({ error: "Failed to save transaction" });
+  }
+});
+
+
+app.get("/api/portfolio", authorize, async (req, res) => {
+  const username = tokenStorage[req.cookies.token];
+
+  try {
+    const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
+    if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+
+    const user_id = userResult.rows[0].id;
+
+    const portfolio = await pool.query(
+      `SELECT s.stock_name,
+              SUM(CASE WHEN p.transaction_type = 'BUY' THEN p.quantity ELSE -p.quantity END) AS total_quantity
+      FROM portfolio p
+      JOIN stocks s ON p.stock_id = s.stock_id
+      WHERE p.user_id = $1
+      GROUP BY s.stock_name
+      HAVING SUM(CASE WHEN p.transaction_type = 'BUY' THEN p.quantity ELSE -p.quantity END) > 0`,
+      [user_id]
+    );
+
+    res.status(200).json({ portfolio: portfolio.rows });
+  } catch (error) {
+    console.error("Error fetching portfolio:", error);
+    res.status(500).json({ error: "Failed to fetch portfolio" });
+  }
 });
 
 
