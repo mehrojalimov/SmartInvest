@@ -1,9 +1,9 @@
 {
-    "user": "USER-NAME",
-    "host": "YOUR-HOST",
-    "database": "YOUR-database-account",
-    "password": "YOUR-password",
+    "user": "postgres",
+    "host": "localhost",
+    "database": "accounts",
+    "password": "Alimov123",
     "port": 5432,
-    "ALPHA_VANTAGE_API_KEY": "YOUR-API",
+    "ALPHA_VANTAGE_API_KEY": "BRW5XSFOYNTDD52C",
     "PGDATABASE": "smartinvest-db"
 }
