@@ -1,4 +1,4 @@
-const config = require('../../envv.json');
+const config = require('../../env.json');
 
 const axios = require("axios");
 
