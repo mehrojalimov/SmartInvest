@@ -28,8 +28,8 @@ CREATE TABLE portfolio (
 
 DROP TABLE IF EXISTS portfolio_history;
 CREATE TABLE portfolio_history (
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    history JSONB NOT NULL, -- Stores portfolio history as JSON
+    user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    history JSONB NOT NULL,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

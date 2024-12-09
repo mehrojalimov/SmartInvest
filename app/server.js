@@ -104,6 +104,46 @@ function validateLogin(body) {
 /*****************************************************************************************************************
                                                 POST and GET methods
 *****************************************************************************************************************/
+
+app.post('/api/portfolio/history', async (req, res) => {
+  const { portfolioHistory, dates } = req.body;
+
+  try {
+      // Assuming a single user for simplicity
+      await pool.query(`
+          INSERT INTO portfolio_history (user_id, history, last_updated)
+          VALUES ($1, $2::JSONB, NOW())
+          ON CONFLICT (user_id) DO UPDATE
+          SET history = $2::JSONB, last_updated = NOW();
+      `, [1, JSON.stringify({ portfolioHistory, dates })]);
+
+      res.status(200).send('Portfolio history saved successfully.');
+  } catch (error) {
+      console.error('Error saving portfolio history:', error);
+      res.status(500).send('Error saving portfolio history.');
+  }
+});
+
+app.get('/api/portfolio/history', async (req, res) => {
+  try {
+      const result = await pool.query(`
+          SELECT history FROM portfolio_history WHERE user_id = $1
+      `, [1]);
+
+      if (result.rows.length === 0) {
+          return res.status(404).json({ error: 'No history found.' });
+      }
+
+      const { history } = result.rows[0];
+      res.status(200).json(history);
+  } catch (error) {
+      console.error('Error loading portfolio history:', error);
+      res.status(500).send('Error loading portfolio history.');
+  }
+});
+
+
+
 app.post("/create", async (req, res) => {
     let { username, password } = req.body;
   
@@ -245,7 +285,36 @@ app.get("/api/stock/:symbol", async (req, res) => {
   }
 });
 
-  app.get("/api/portfolio", authorize, async (req, res) => {
+app.get("/api/portfolio", authorize, async (req, res) => {
+  const username = tokenStorage[req.cookies.token];
+
+  try {
+    const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
+    if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+
+    const user_id = userResult.rows[0].id;
+
+    const portfolio = await pool.query(
+      `SELECT s.stock_name,
+      SUM(p.total_quantity) AS total_quantity
+      FROM portfolio p
+      JOIN stocks s ON p.stock_id = s.stock_id
+      WHERE p.user_id = $1
+      GROUP BY s.stock_name;
+      `,
+      [user_id]
+    );
+
+    res.status(200).json({ portfolio: portfolio.rows });
+  } catch (error) {
+    console.error("Error fetching portfolio:", error);
+    res.status(500).json({ error: "Failed to fetch portfolio" });
+  }
+});
+
+
+app.post("/api/portfolio/transaction", authorize, async (req, res) => {
+    const { stock_name, transaction_type, quantity } = req.body;
     const username = tokenStorage[req.cookies.token];
 
     try {
@@ -254,48 +323,19 @@ app.get("/api/stock/:symbol", async (req, res) => {
 
       const user_id = userResult.rows[0].id;
 
-      const portfolio = await pool.query(
-        `SELECT s.stock_name,
-       SUM(p.total_quantity) AS total_quantity
-FROM portfolio p
-JOIN stocks s ON p.stock_id = s.stock_id
-WHERE p.user_id = $1
-GROUP BY s.stock_name;
-`,
-        [user_id]
+      // Insert transaction into the portfolio
+      await pool.query(
+        `INSERT INTO portfolio (user_id, stock_id, transaction_type, quantity, transaction_date)
+        VALUES ($1, (SELECT stock_id FROM stocks WHERE stock_name = $2), $3, $4, CURRENT_TIMESTAMP)`,
+        [user_id, stock_name, transaction_type, quantity]
       );
 
-      res.status(200).json({ portfolio: portfolio.rows });
+      res.status(200).json({ message: "Transaction saved successfully" });
     } catch (error) {
-      console.error("Error fetching portfolio:", error);
-      res.status(500).json({ error: "Failed to fetch portfolio" });
+      console.error("Error saving transaction:", error.message);
+      res.status(500).json({ error: "Failed to save transaction" });
     }
   });
-
-
-  app.post("/api/portfolio/transaction", authorize, async (req, res) => {
-      const { stock_name, transaction_type, quantity } = req.body;
-      const username = tokenStorage[req.cookies.token];
-  
-      try {
-        const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
-        if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
-  
-        const user_id = userResult.rows[0].id;
-  
-        // Insert transaction into the portfolio
-        await pool.query(
-          `INSERT INTO portfolio (user_id, stock_id, transaction_type, quantity, transaction_date)
-          VALUES ($1, (SELECT stock_id FROM stocks WHERE stock_name = $2), $3, $4, CURRENT_TIMESTAMP)`,
-          [user_id, stock_name, transaction_type, quantity]
-        );
-  
-        res.status(200).json({ message: "Transaction saved successfully" });
-      } catch (error) {
-        console.error("Error saving transaction:", error.message);
-        res.status(500).json({ error: "Failed to save transaction" });
-      }
-    });
 
   // Retrieve all stocks
   // app.get('/api/stocks', async (req, res) => {
