@@ -340,7 +340,7 @@ function sellStock(button, symbol) {
     const currentPrice = parseFloat(row.cells[2].innerText.slice(1)); // Parse the stock price, removing "$"
     const currentShares = parseFloat(row.cells[1].innerText); // Parse the volume (shares)
 
-    if (isNaN(currentPrice) || isNaN(currentShares)) {
+    if (isNaN(currentPrice) || isNaN(currentShares) || currentShares <= 0) {
         alert('Invalid stock data. Please ensure the stock information is correct.');
         return;
     }
@@ -356,10 +356,15 @@ function sellStock(button, symbol) {
     row.parentNode.removeChild(row);
 
     // Recalculate total assets after selling
-    updateTotalAssets();
+    updateTotalAssets().then(() => {
+        // Update the graph
+        updatePortfolioChart();
+    });
 
     alert(`Successfully sold all shares of ${symbol} for $${totalSellValue.toFixed(2)}.`);
 }
+
+
 
 
 const ctx = document.getElementById('portfolioChart').getContext('2d');
