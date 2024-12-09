@@ -16,3 +16,12 @@ CREATE TABLE stocks (
     stock_date DATE NOT NULL,
     stock_value INT NOT NULL
 );
+
+DROP TABLE IF EXISTS portfolio;
+CREATE TABLE portfolio (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    stock_id INT NOT NULL REFERENCES stocks(stock_id) ON DELETE CASCADE,
+    total_quantity INT NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

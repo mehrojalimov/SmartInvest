@@ -1,7 +1,12 @@
 let cashBalance = 1000; // Starting cash balance
 let totalAssets = 0; // Starting total assets
-let portfolioHistory = []; // Array to store portfolio value over time
-let dates = []; // Array to store dates for the x-axis of the chart
+
+// Hardcoded data for the portfolio chart
+let portfolioHistory = [700, 800]; // Values for the last two days
+let dates = [
+    new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleDateString(), // Two days ago
+    new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toLocaleDateString(), // Yesterday
+];
 
 function updatePortfolioChart() {
     const totalPortfolioValue = totalAssets; // Total portfolio value including cash and assets
@@ -25,7 +30,6 @@ function updatePortfolioChart() {
     });
     portfolioChart.update();
 }
-
 
 
 async function endOfDayUpdate() {
@@ -153,17 +157,21 @@ function updateTotalAssetsDisplay() {
 
 document.getElementById('buy-stock').addEventListener('click', () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
-    if (!symbol) {
-        alert('Please enter a stock symbol!');
+    const amount = parseFloat(document.getElementById('buy-amount').value); // Correctly define `amount` here
+
+    if (!symbol || isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid stock symbol and amount!');
         return;
     }
 
-    const priceElement = document.querySelector('#stock-data p:nth-child(6)'); // 6th <p> contains the price
-    const stockPrice = priceElement?.textContent.split(': ')[1];
+    const priceElement = document.querySelector('#stock-data p:nth-child(6)');
+    const stockPrice = parseFloat(priceElement.textContent.split(': ')[1]);
+
     if (!stockPrice) {
         alert('Fetch stock data first to retrieve the price!');
         return;
     }
+
     const numberShares = amount / stockPrice;
     if (cashBalance < amount) {
         alert('Not enough cash to buy!');
@@ -173,8 +181,10 @@ document.getElementById('buy-stock').addEventListener('click', () => {
     updateCashDisplay();
     addOrUpdateRow(symbol, numberShares, stockPrice);
 
+    updateTotalAssets();
     updatePortfolioChart();
 });
+
 
 document.getElementById('sell-stock').addEventListener('click', () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
@@ -287,7 +297,6 @@ function sellStock(button, symbol) {
 
     alert(`Successfully sold all shares of ${symbol} for $${totalSellValue.toFixed(2)}.`);
 }
-
 const ctx = document.getElementById('portfolioChart').getContext('2d');
 const portfolioChart = new Chart(ctx, {
     type: 'line',
