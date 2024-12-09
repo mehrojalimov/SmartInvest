@@ -2,8 +2,9 @@ let cashBalance = 1000; // Starting cash balance
 let totalAssets = 0; // Starting total assets
 
 // Hardcoded data for the portfolio chart
-let portfolioHistory = [700, 800]; // Values for the last two days
+let portfolioHistory = [1000, 700, 800]; // Values for the last two days
 let dates = [
+    new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString(),
     new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleDateString(), // Two days ago
     new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toLocaleDateString(), // Yesterday
 ];
