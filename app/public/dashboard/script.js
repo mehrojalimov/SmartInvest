@@ -39,7 +39,8 @@ async function endOfDayUpdate() {
         newTotalAssets += shares * currentPrice;
     }
     totalAssets = newTotalAssets;
-    updateTotalAssets();
+    updateTotalAssetsDisplay();
+    updatePortfolioChart(); // Update the chart at the end of the day with the new asset value
 }
 
 
@@ -51,22 +52,28 @@ document.getElementById('fetch-data').addEventListener('click', async () => {
         alert('Please enter a stock symbol!');
         return;
     }
+
     const url = `/api/stock/${symbol}`;
+
     try {
         const response = await fetch(url);
         const data = await response.json();
+
         if (!response.ok) {
             throw new Error(data.message || `No data found for ${symbol} or error in API call.`);
         }
-        const quote = data;
+
+        const quote = data; // Assuming data is directly the quote object
+
+        // Display stock data
         document.getElementById('stock-data').innerHTML = `
             <h2>Stock: ${symbol}</h2>
             <p><strong>Time:</strong> ${quote.time}</p>
-            <p><strong>Open:</strong> $${parseFloat(quote.open).toFixed(2)}</p>
-            <p><strong>High:</strong> $${parseFloat(quote.high).toFixed(2)}</p>
-            <p><strong>Low:</strong> $${parseFloat(quote.low).toFixed(2)}</p>
-            <p><strong>Price:</strong> $${parseFloat(quote.price).toFixed(2)}</p>
-            <p><strong>Volume:</strong> ${quote.volume.toLocaleString()}</p>
+            <p><strong>Open:</strong> ${quote.open}</p>
+            <p><strong>High:</strong> ${quote.high}</p>
+            <p><strong>Low:</strong> ${quote.low}</p>
+            <p><strong>Price:</strong> ${quote.price}</p>
+            <p><strong>Volume:</strong> ${quote.volume}</p>
         `;
     } catch (error) {
         document.getElementById('stock-data').innerHTML = `<p>Error: ${error.message}</p>`;
@@ -85,7 +92,7 @@ document.getElementById('update-assets').addEventListener('click', async () => {
         newTotalAssets += assetValue;
     }
     totalAssets = newTotalAssets;
-    updateTotalAssets();
+    updateTotalAssetsDisplay();
 });
 
 async function fetchCurrentPrice(symbol) {
@@ -148,13 +155,13 @@ function updateTotalAssetsDisplay() {
 
 document.getElementById('buy-stock').addEventListener('click', () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
-    const amount = parseFloat(document.getElementById('buy-amount').value);
-    if (!symbol || isNaN(amount) || amount <= 0) {
-        alert('Please enter a valid stock symbol and amount!');
+    if (!symbol) {
+        alert('Please enter a stock symbol!');
         return;
     }
-    const priceElement = document.querySelector('#stock-data p:nth-child(6)');
-    const stockPrice = parseFloat(priceElement?.textContent.split('$')[1]);
+
+    const priceElement = document.querySelector('#stock-data p:nth-child(6)'); // 6th <p> contains the price
+    const stockPrice = priceElement?.textContent.split(': ')[1];
     if (!stockPrice) {
         alert('Fetch stock data first to retrieve the price!');
         return;
@@ -168,7 +175,7 @@ document.getElementById('buy-stock').addEventListener('click', () => {
     updateCashDisplay();
     addOrUpdateRow(symbol, numberShares, stockPrice);
 
-    updateTotalAssets();
+    updatePortfolioChart();
 });
 
 document.getElementById('sell-stock').addEventListener('click', () => {
@@ -203,6 +210,9 @@ document.getElementById('sell-stock').addEventListener('click', () => {
     }
 
     updateTotalAssets(); // Update total assets after the sell
+
+    updatePortfolioChart(); // Update the chart
+
 });
 
 
@@ -319,6 +329,6 @@ const portfolioChart = new Chart(ctx, {
 window.onload = () => {
     fetchPortfolio();
     updateCashDisplay(); // Initial display update
-    updateTotalAssets();
+    updateTotalAssetsDisplay();
     updatePortfolioChart(); // Initial chart display when page loads
 };
