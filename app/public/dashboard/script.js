@@ -30,6 +30,44 @@ function updatePortfolioChart() {
         dataset.data = portfolioHistory;
     });
     portfolioChart.update();
+
+    // Update database with new data
+    savePortfolioHistoryToDatabase();
+}
+
+async function loadPortfolioHistoryFromDatabase() {
+    try {
+        const response = await fetch('/api/portfolio/history', { method: 'GET' });
+        const data = await response.json();
+
+        if (data.history && data.dates) {
+            portfolioHistory = data.history;
+            dates = data.dates.map(date => new Date(date).toLocaleDateString());
+        }
+
+        console.log('Portfolio history loaded:', { portfolioHistory, dates });
+    } catch (error) {
+        console.error('Error loading portfolio history from database:', error);
+    }
+}
+
+
+
+
+async function savePortfolioHistoryToDatabase() {
+    try {
+        await fetch('/api/portfolio/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                portfolioHistory,
+                dates
+            }),
+        });
+        console.log('Portfolio history saved successfully.');
+    } catch (error) {
+        console.error('Error saving portfolio history to database:', error);
+    }
 }
 
 
@@ -47,6 +85,7 @@ async function endOfDayUpdate() {
     updateTotalAssetsDisplay();
     updatePortfolioChart(); // Update the chart at the end of the day with the new asset value
 }
+
 
 
 document.getElementById('fetch-data').addEventListener('click', async () => {
@@ -298,6 +337,8 @@ function sellStock(button, symbol) {
 
     alert(`Successfully sold all shares of ${symbol} for $${totalSellValue.toFixed(2)}.`);
 }
+
+
 const ctx = document.getElementById('portfolioChart').getContext('2d');
 const portfolioChart = new Chart(ctx, {
     type: 'line',
@@ -333,10 +374,10 @@ const portfolioChart = new Chart(ctx, {
     },
 });
 
-
-window.onload = () => {
+window.onload = async () => {
+    await loadPortfolioHistoryFromDatabase(); // Load saved data
     fetchPortfolio();
     updateCashDisplay(); // Initial display update
     updateTotalAssetsDisplay();
-    updatePortfolioChart(); // Initial chart display when page loads
+    updatePortfolioChart(); // Initialize chart with loaded data
 };

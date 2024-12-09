@@ -256,12 +256,12 @@ app.get("/api/stock/:symbol", async (req, res) => {
 
       const portfolio = await pool.query(
         `SELECT s.stock_name,
-                SUM(CASE WHEN p.transaction_type = 'BUY' THEN p.quantity ELSE -p.quantity END) AS total_quantity
-        FROM portfolio p
-        JOIN stocks s ON p.stock_id = s.stock_id
-        WHERE p.user_id = $1
-        GROUP BY s.stock_name
-        HAVING SUM(CASE WHEN p.transaction_type = 'BUY' THEN p.quantity ELSE -p.quantity END) > 0`,
+       SUM(p.total_quantity) AS total_quantity
+FROM portfolio p
+JOIN stocks s ON p.stock_id = s.stock_id
+WHERE p.user_id = $1
+GROUP BY s.stock_name;
+`,
         [user_id]
       );
 

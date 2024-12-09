@@ -25,3 +25,19 @@ CREATE TABLE portfolio (
     total_quantity INT NOT NULL DEFAULT 0,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+DROP TABLE IF EXISTS portfolio_history;
+CREATE TABLE portfolio_history (
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    history JSONB NOT NULL, -- Stores portfolio history as JSON
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    stock_id INT NOT NULL REFERENCES stocks(stock_id) ON DELETE CASCADE,
+    transaction_type VARCHAR(10) NOT NULL, -- BUY or SELL
+    quantity INT NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
