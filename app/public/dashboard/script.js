@@ -329,25 +329,51 @@ const portfolioChart = new Chart(ctx, {
             {
                 label: 'Portfolio Value ($)',
                 data: portfolioHistory,
-                borderColor: 'blue',
+                borderColor: '#c2b067',
+                color: '#c2b067',
                 tension: 0.3,
                 fill: false,
+                pointRadius: 5,
+                pointHoverRadius: 7,
             },
         ],
     },
     options: {
         responsive: true,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#c2b067',
+                    font: {
+                        size: 14,
+                    },
+                },
+            },
+            tooltip: {
+                backgroundColor: 'black',
+                titleColor: 'white',
+                bodyColor: 'white',
+            },
+        },
         scales: {
             x: {
                 title: {
                     display: true,
                     text: 'Date',
+                    color: '#c2b067'
                 },
             },
             y: {
                 title: {
                     display: true,
                     text: 'Portfolio Value ($)',
+                    color: '#c2b067'
+                },
+                ticks: {
+                    color: '#c2b067', // Y-axis tick color
+                },
+                grid: {
+                    color: 'rgba(255, 215, 0, 0.2)', // Light gold gridlines
                 },
                 beginAtZero: false,
             },
