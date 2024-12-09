@@ -17,6 +17,7 @@ function updatePortfolioChart() {
     const nextDate = new Date(lastDate.setDate(lastDate.getDate() + 1)).toLocaleDateString();
 
     // Check if the current date already has a record
+    
     const lastIndex = dates.length - 1;
     if (lastIndex === -1 || dates[lastIndex] !== nextDate) {
         // If no record for today, add a new entry
@@ -28,9 +29,9 @@ function updatePortfolioChart() {
     }
 
     // Update the chart with new data
-    portfolioChart.data.labels = dates;
+    portfolioChart.data.labels = [...dates];
     portfolioChart.data.datasets.forEach((dataset) => {
-        dataset.data = portfolioHistory;
+        dataset.data = [...portfolioHistory];
     });
     portfolioChart.update();
 
