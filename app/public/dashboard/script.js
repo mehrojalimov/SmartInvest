@@ -153,21 +153,17 @@ function updateTotalAssetsDisplay() {
 
 document.getElementById('buy-stock').addEventListener('click', () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
-    const amount = parseFloat(document.getElementById('buy-amount').value); // Correctly define `amount` here
-
-    if (!symbol || isNaN(amount) || amount <= 0) {
-        alert('Please enter a valid stock symbol and amount!');
+    if (!symbol) {
+        alert('Please enter a stock symbol!');
         return;
     }
 
-    const priceElement = document.querySelector('#stock-data p:nth-child(6)');
-    const stockPrice = parseFloat(priceElement.textContent.split(': ')[1]);
-
+    const priceElement = document.querySelector('#stock-data p:nth-child(6)'); // 6th <p> contains the price
+    const stockPrice = priceElement?.textContent.split(': ')[1];
     if (!stockPrice) {
         alert('Fetch stock data first to retrieve the price!');
         return;
     }
-
     const numberShares = amount / stockPrice;
     if (cashBalance < amount) {
         alert('Not enough cash to buy!');
@@ -177,10 +173,8 @@ document.getElementById('buy-stock').addEventListener('click', () => {
     updateCashDisplay();
     addOrUpdateRow(symbol, numberShares, stockPrice);
 
-    updateTotalAssets();
     updatePortfolioChart();
 });
-
 
 document.getElementById('sell-stock').addEventListener('click', () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
