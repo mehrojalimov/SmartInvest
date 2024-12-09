@@ -13,6 +13,11 @@
 <body>
     <h1>Portfolio</h1>
     <div id="finance-container">
+        <div id="assets-section">
+            <div id="total-assets">Total Assets: $0.00</div>
+            <button id="update-assets">Update Total Assets</button>
+        </div>
+        
         <div id="vertically">
             Cash Balance: <span id="cash-amount">$1000.00</span>
             <div class="input-button-pair">
@@ -23,12 +28,34 @@
                 <button id="update-cash">Update</button>
             </div>  
         </div>      
-        <div id="assets-section">
-            <div id="total-assets">Total Assets: $0.00</div>
-            <button id="update-assets">Update Total Assets</button>
-        </div>
+        
     </div>
     
+
+    <div id="portfolio-container">
+
+        <div id="chart-container">
+            <h3>Portfolio Performance</h3>
+            <canvas id="portfolioChart"></canvas>
+        </div>
+        <div id="table-container">
+            <h2>Purchased Stocks</h2>
+            <table id="stock-table">
+                <thead>
+                    <tr>
+                        <th>Stock Name</th>
+                        <th>Volume</th>
+                        <th>Price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        
+        
+    </div>
 
     <div id="layout-container">
         <div id="inputs-container">
@@ -62,28 +89,7 @@
         </div>
     </div>
     
-    <div id="portfolio-container">
-        <div id="table-container">
-            <h2>Purchased Stocks</h2>
-            <table id="stock-table">
-                <thead>
-                    <tr>
-                        <th>Stock Name</th>
-                        <th>Volume</th>
-                        <th>Price</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                </tbody>
-            </table>
-        </div>
-        
-        <div id="chart-container">
-            <h3>Portfolio Performance</h3>
-            <canvas id="portfolioChart"></canvas>
-        </div>
-    </div>
+    
     
     <script src="./script.js"></script>
 </body>

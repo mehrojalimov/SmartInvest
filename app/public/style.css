@@ -1,5 +1,5 @@
 
-@import url("https://fonts.googleapis.com/css?family=Fira+Sans");
+/* @import url("https://fonts.googleapis.com/css?family=Fira+Sans"); */
 @keyframes fadeIn {
     0% {
         opacity: 0;
@@ -28,7 +28,7 @@ body {
     justify-content: center;
     height: 100vh;
     margin: 0;
-    font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+    font-family: Garamond, serif;
     background: linear-gradient(-135deg, #2EB086,black, #B8405E);
     animation: fadeIn 1s ease-in-out;
 }

@@ -1,5 +1,5 @@
 body {
-        font-family: Arial, sans-serif;
+        font-family: Garamond, serif;
         margin: 20px;
         background-color: black;
         color: white;
@@ -17,7 +17,7 @@ div {
 
 #layout-container {
     display: flex;
-    align-items: flex-start; /* Align items to the top */
+    align-items: center; /* Align items to the top */
     gap: 20px; /* Add spacing between the two sections */
     margin: 20px 0;
 }
@@ -34,14 +34,6 @@ div {
     width: 100%;
 }
 
-/* input {
-    padding: 8px;
-    width: calc(100% - 16px);
-    max-width: 200px;
-    border: 1px solid #c2b067;
-    border-radius: 5px;
-} */
-
 #stock-data-container {
     flex: 1;
     max-width: 40%;
@@ -49,14 +41,17 @@ div {
     border: 1px solid #c2b067;
     border-radius: 5px;
     background-color: black;
+    align-items: center;
+    
 }
+
 
 #stock-data {
     font-size: 1rem;
     line-height: 1.5;
 }
 
-#update-cash {
+#update-cash, #update-assets {
     padding: 10px 20px;
     background-color: black;
     color: white;
@@ -71,14 +66,14 @@ div {
     text-transform: uppercase;
 }
 
-#update-cash:hover {
+#update-cash:hover, #update-assets:hover {
     letter-spacing: 3px;
     background-color: #c2b067;
     color: hsl(0, 0%, 100%);
     box-shadow: #856a00;
 }
 
-#update-cash:active {
+#update-cash:active, #update-assets:active {
     letter-spacing: 3px;
     background-color: black;
     color: hsl(0, 0%, 100%);
@@ -217,7 +212,7 @@ button:hover {
 #assets-section {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
     gap: 10px;
 }
 
@@ -226,21 +221,6 @@ button:hover {
     font-size: 1.5rem;
     font-weight: bold;
     line-height: 1.8;
-}
-
-button#update-assets {
-    padding: 10px 20px;
-    font-size: 1rem;
-    cursor: pointer;
-    border: none;
-    background-color: #c2b067;
-    color: white;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-}
-
-button#update-assets:hover {
-    background-color: #856a00;
 }
 
 #chart-container {
