@@ -23,24 +23,24 @@ div {
 }
 
 #inputs-container {
-    flex: 1; /* Inputs take one part of the space */
-    max-width: 60%; /* Limit width of inputs section */
+    flex: 1;
+    max-width: 60%;
 }
 
 .input-button-pair {
-        display: flex;
-        align-items: center;
-        gap: 10px; /* Space between input and button */
-        margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
 }
 
-input {
+/* input {
     padding: 8px;
     width: calc(100% - 16px);
     max-width: 200px;
     border: 1px solid #c2b067;
     border-radius: 5px;
-}
+} */
 
 #stock-data-container {
     flex: 1;
@@ -56,20 +56,97 @@ input {
     line-height: 1.5;
 }
 
-
-button {
-        padding: 10px 15px;
-        font-size: 1em;
-        color: white;
-        background-color: #c2b067;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
+#update-cash {
+    padding: 10px 20px;
+    background-color: black;
+    color: white;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.5s ease;
+    margin-bottom: 20px;
+    border: 1.2px solid #c2b067;
+    letter-spacing: 1px;
+    border-radius: 25px; 
+    text-transform: uppercase;
 }
 
+#update-cash:hover {
+    letter-spacing: 3px;
+    background-color: #c2b067;
+    color: hsl(0, 0%, 100%);
+    box-shadow: #856a00;
+}
+
+#update-cash:active {
+    letter-spacing: 3px;
+    background-color: black;
+    color: hsl(0, 0%, 100%);
+    box-shadow: #856a00;
+    transform: translateY(10px);
+    transition: 100ms;
+  }
+
+button {
+    padding: 10px 20px;
+    background-color: black;
+    color: white;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.5s ease;
+    margin-bottom: 10px;
+    border: 1.2px solid #c2b067;
+    letter-spacing: 1px;
+    border-radius: 25px; 
+    text-transform: uppercase;
+  }
+
 button:hover {
-    background-color: #856a00;
+    letter-spacing: 3px;
+    background-color: #c2b067;
+    color: hsl(0, 0%, 100%);
+    box-shadow: #856a00;
+  }
+
+  button:active {
+    letter-spacing: 3px;
+    background-color: #c2b067;
+    color: hsl(0, 0%, 100%);
+    box-shadow: #856a00;
+    transform: translateY(10px);
+    transition: 100ms;
+  }
+
+
+#buy-stock {
+    border: 1.2px solid hsl(150, 80%, 48%);
+    color: white;
+}
+
+#buy-stock:hover {
+    background-color: hsl(152, 69%, 55%);
+}
+
+#buy-stock:active {
+    background-color: black;
+    border: 1.2px solid hsl(150, 80%, 48%);
+    color:white;
+}
+
+#sell-stock {
+    border: 1.2px solid hsl(0, 80%, 48%);
+    color: white;
+}
+
+#sell-stock:hover {
+    background-color: hsl(0, 70%, 38%);
+}
+
+#sell-stock:active {
+    background-color: black ;
+    border: 1.2px solid hsl(0, 90%, 28%);
+    color:white;
 }
 
 #portfolio-container {
@@ -98,12 +175,10 @@ button:hover {
 }
 
 #stock-table th {
-    background-color: #c2b067;
+    background-color: black;
     font-weight: bold;
-}
-
-#stock-table tr:nth-child(even) {
-    background-color: #c2b067;
+    border-radius: 25px;
+    border: 1.2px solid #c2b067;
 }
 
 #chart-container {
@@ -139,47 +214,6 @@ button:hover {
     font-weight: bold;
 }
 
-#cash-input-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    
-}
-
-#cash-input {
-    flex: 1;
-    padding: 8px;
-    font-size: 1rem;
-    border: 1px solid #c2b067;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    margin-top: 10px;
-}
-
-#cash-input:focus {
-    border-color: #c2b067;
-    outline: none;
-    box-shadow: 0 0 4px rgba(0, 123, 255, 0.2);
-    
-}
-
-#update-cash {
-    background-color: #c2b067;
-    color: white;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin-bottom: 20px;
-}
-
-#update-cash:hover {
-    background-color: #856a00;
-}
-
 #assets-section {
     display: flex;
     flex-direction: column;
@@ -194,7 +228,7 @@ button:hover {
     line-height: 1.8;
 }
 
-button#update-assets, #update-cash {
+button#update-assets {
     padding: 10px 20px;
     font-size: 1rem;
     cursor: pointer;
@@ -230,4 +264,37 @@ button#update-assets:hover {
     width: 100%;
     height: auto;
 }
+
+.input-group{
+    position: relative;
+}
+
+.input-group label{
+    position: absolute;
+    transform: translateY(-50%);
+    left: 15px;
+    font-size: 16px;
+    pointer-events: none;
+    color: white;
+    padding: 0 5px;
+    transition: .5s;
+}
+
+.input-group input{
+    height: 30px;
+    color: white;
+    font-size: 16px;
+    border: 1.2px solid gold;
+    background: transparent;
+    outline:none;
+    border-radius: 5px;
+}
+
+.input-group input:focus~label,
+.input-group input:valid~label{
+    top: 0;
+    background: black;
+    font-size: 14px
+}
+
 

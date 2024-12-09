@@ -365,27 +365,49 @@ const portfolioChart = new Chart(ctx, {
         labels: dates,
         datasets: [
             {
-                label: 'Portfolio Value ($)',
+                label: '',
                 data: portfolioHistory,
-                borderColor: 'blue',
+                borderColor: '#c2b067',
+                color: '#c2b067',
                 tension: 0.3,
                 fill: false,
+                pointRadius: 5,
+                pointHoverRadius: 7,
             },
         ],
     },
     options: {
         responsive: true,
+        plugins: {
+            legend: {
+                display: false,
+            },
+        },
         scales: {
             x: {
                 title: {
                     display: true,
-                    text: 'Date',
+                    color: '#c2b067',
+                    text: 'Dates',
+                },
+                ticks: {
+                    display: false,
+                },
+                grid: {
+                    display: true,
                 },
             },
             y: {
                 title: {
                     display: true,
-                    text: 'Portfolio Value ($)',
+                    text: 'Value ($)',
+                    color: '#c2b067'
+                },
+                ticks: {
+                    color: 'rgba(194, 176, 103, 0.8)',
+                },
+                grid: {
+                    color: 'rgba(194, 176, 103, 0.2)',
                 },
                 beginAtZero: false,
             },

@@ -1,6 +1,6 @@
-DROP DATABASE IF EXISTS accounts;
-CREATE DATABASE accounts;
-\c accounts
+DROP DATABASE IF EXISTS smartinvest;
+CREATE DATABASE smartinvest;
+\c smartinvest
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
