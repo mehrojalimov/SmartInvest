@@ -13,7 +13,13 @@
 <body>
     <h1>Your Portfolio</h1>
     <div id="finance-container">
-        <div id="cash-display">Cash Balance: $1000.00</div>
+        <div id="vertically">
+            Cash Balance: <span id="cash-amount">$1000.00</span>
+            <div>
+                <input type="number" id="cash-input" placeholder="Add more cash">
+                <button id="update-cash">Update Cash Balance</button>
+            </div>  
+        </div>      
         <div id="assets-section">
             <div id="total-assets">Total Assets: $0.00</div>
             <button id="update-assets">Update Total Assets</button>

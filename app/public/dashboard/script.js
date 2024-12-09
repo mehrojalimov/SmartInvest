@@ -13,11 +13,14 @@ function updatePortfolioChart() {
     const totalPortfolioValue = totalAssets; // Total portfolio value including cash and assets
     const today = new Date().toLocaleDateString(); // Get today's date
 
+    const lastDate = dates.length > 0 ? new Date(dates[dates.length - 1]) : new Date();
+    const nextDate = new Date(lastDate.setDate(lastDate.getDate() + 1)).toLocaleDateString();
+
     // Check if the current date already has a record
     const lastIndex = dates.length - 1;
-    if (lastIndex === -1 || dates[lastIndex] !== today) {
+    if (lastIndex === -1 || dates[lastIndex] !== nextDate) {
         // If no record for today, add a new entry
-        dates.push(today);
+        dates.push(nextDate);
         portfolioHistory.push(totalPortfolioValue);
     } else {
         // Update today's value to reflect any transactions or price changes
@@ -33,6 +36,27 @@ function updatePortfolioChart() {
 
     // Update database with new data
     savePortfolioHistoryToDatabase();
+}
+
+document.getElementById('update-cash').addEventListener('click', () => {
+    const cashInput = document.getElementById('cash-input');
+    const newCashBalance = parseFloat(cashInput.value);
+
+    // Validate user input
+    if (isNaN(newCashBalance) || newCashBalance < 0) {
+        alert('Please enter a valid positive number for cash balance.');
+        return;
+    }
+
+    // Update the cash balance
+    cashBalance += newCashBalance;
+    updateCashDisplay(); // Refresh the display
+    cashInput.value = ''; // Clear the input field
+});
+
+function updateCashDisplay() {
+    const cashAmountElement = document.getElementById('cash-amount');
+    cashAmountElement.textContent = `$${cashBalance.toFixed(2)}`;
 }
 
 async function loadPortfolioHistoryFromDatabase() {
@@ -190,9 +214,8 @@ async function buyStock() {
   window.onload = fetchPortfolio;
   
 
-function updateTotalAssetsDisplay() {
+  function updateTotalAssetsDisplay() {
     document.getElementById('total-assets').innerText = `Total Assets: $${totalAssets.toFixed(2)}`;
-    updatePortfolioChart();
 }
 
 document.getElementById('buy-stock').addEventListener('click', () => {
@@ -278,10 +301,6 @@ async function updateTotalAssets() {
     updateTotalAssetsDisplay();
 }
 
-
-function updateCashDisplay() {
-    document.getElementById('cash-display').innerText = `Cash Balance: $${cashBalance.toFixed(2)}`;
-}
 
 function addOrUpdateRow(symbol, numberShares, price) {
     let row = findRow(symbol);

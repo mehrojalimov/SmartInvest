@@ -122,11 +122,62 @@ button:hover {
     justify-content: space-between;
     align-items: center;
     margin: 20px 0;
+    
+}
+
+
+
+#vertically{
+    flex-direction: column;
+    font-size: 1.2rem;
+    font-weight: bold;
+    gap: 20px;
 }
 
 #cash-display {
     font-size: 1.2rem;
     font-weight: bold;
+}
+
+#cash-input-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    
+}
+
+#cash-input {
+    flex: 1;
+    padding: 8px;
+    font-size: 1rem;
+    border: 1px solid #c2b067;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+#cash-input:focus {
+    border-color: #c2b067;
+    outline: none;
+    box-shadow: 0 0 4px rgba(0, 123, 255, 0.2);
+    
+}
+
+#update-cash {
+    background-color: #c2b067;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-bottom: 20px;
+}
+
+#update-cash:hover {
+    background-color: #856a00;
 }
 
 #assets-section {
@@ -136,14 +187,14 @@ button:hover {
     gap: 10px;
 }
 
-#total-assets, #cash-display {
+#total-assets, #cash-amount {
     margin: 20px 0;
     font-size: 1.5rem;
     font-weight: bold;
     line-height: 1.8;
 }
 
-button#update-assets {
+button#update-assets, #update-cash {
     padding: 10px 20px;
     font-size: 1rem;
     cursor: pointer;
