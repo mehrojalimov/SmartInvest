@@ -10,30 +10,29 @@ let dates = [
 ];
 
 function updatePortfolioChart() {
-    const totalPortfolioValue = totalAssets; // Total portfolio value including cash and assets
+    const totalPortfolioValue = totalAssets; // Include cash and assets
     const today = new Date().toLocaleDateString(); // Get today's date
 
-    // Check if the current date already has a record
+    // Update or add today's record
     const lastIndex = dates.length - 1;
     if (lastIndex === -1 || dates[lastIndex] !== today) {
-        // If no record for today, add a new entry
         dates.push(today);
         portfolioHistory.push(totalPortfolioValue);
     } else {
-        // Update today's value to reflect any transactions or price changes
         portfolioHistory[lastIndex] = totalPortfolioValue;
     }
 
-    // Update the chart with new data
-    portfolioChart.data.labels = dates;
-    portfolioChart.data.datasets.forEach((dataset) => {
-        dataset.data = portfolioHistory;
-    });
+    console.log("Updated chart data:", { dates, portfolioHistory });
+
+    // Update Chart.js data
+    portfolioChart.data.labels = [...dates];
+    portfolioChart.data.datasets[0].data = [...portfolioHistory];
     portfolioChart.update();
 
-    // Update database with new data
+    // Save the updated history to the database
     savePortfolioHistoryToDatabase();
 }
+
 
 
 document.getElementById('update-cash').addEventListener('click', () => {
@@ -216,9 +215,9 @@ async function buyStock() {
     document.getElementById('total-assets').innerText = `Total Assets: $${totalAssets.toFixed(2)}`;
 }
 
-document.getElementById('buy-stock').addEventListener('click', () => {
+document.getElementById('buy-stock').addEventListener('click', async () => {
     const symbol = document.getElementById('symbol').value.toUpperCase();
-    const amount = parseFloat(document.getElementById('buy-amount').value); // Correctly define `amount` here
+    const amount = parseFloat(document.getElementById('buy-amount').value);
 
     if (!symbol || isNaN(amount) || amount <= 0) {
         alert('Please enter a valid stock symbol and amount!');
@@ -238,11 +237,18 @@ document.getElementById('buy-stock').addEventListener('click', () => {
         alert('Not enough cash to buy!');
         return;
     }
+
+    // Deduct the amount from cash balance
     cashBalance -= amount;
     updateCashDisplay();
+
+    // Add the purchased stock to the table
     addOrUpdateRow(symbol, numberShares, stockPrice);
 
-    updateTotalAssets();
+    // Recalculate total assets
+    await updateTotalAssets();
+
+    // Update the chart immediately
     updatePortfolioChart();
 });
 
