@@ -39,8 +39,7 @@ async function endOfDayUpdate() {
         newTotalAssets += shares * currentPrice;
     }
     totalAssets = newTotalAssets;
-    updateTotalAssetsDisplay();
-    updatePortfolioChart(); // Update the chart at the end of the day with the new asset value
+    updateTotalAssets();
 }
 
 
@@ -86,7 +85,7 @@ document.getElementById('update-assets').addEventListener('click', async () => {
         newTotalAssets += assetValue;
     }
     totalAssets = newTotalAssets;
-    updateTotalAssetsDisplay();
+    updateTotalAssets();
 });
 
 async function fetchCurrentPrice(symbol) {
@@ -169,7 +168,7 @@ document.getElementById('buy-stock').addEventListener('click', () => {
     updateCashDisplay();
     addOrUpdateRow(symbol, numberShares, stockPrice);
 
-    updatePortfolioChart();
+    updateTotalAssets();
 });
 
 document.getElementById('sell-stock').addEventListener('click', () => {
@@ -204,9 +203,6 @@ document.getElementById('sell-stock').addEventListener('click', () => {
     }
 
     updateTotalAssets(); // Update total assets after the sell
-
-    updatePortfolioChart(); // Update the chart
-
 });
 
 
@@ -323,6 +319,6 @@ const portfolioChart = new Chart(ctx, {
 window.onload = () => {
     fetchPortfolio();
     updateCashDisplay(); // Initial display update
-    updateTotalAssetsDisplay();
+    updateTotalAssets();
     updatePortfolioChart(); // Initial chart display when page loads
 };
