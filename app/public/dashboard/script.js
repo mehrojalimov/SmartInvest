@@ -13,15 +13,11 @@ function updatePortfolioChart() {
     const totalPortfolioValue = totalAssets; // Total portfolio value including cash and assets
     const today = new Date().toLocaleDateString(); // Get today's date
 
-    const lastDate = dates.length > 0 ? new Date(dates[dates.length - 1]) : new Date();
-    const nextDate = new Date(lastDate.setDate(lastDate.getDate() + 1)).toLocaleDateString();
-
     // Check if the current date already has a record
-    
     const lastIndex = dates.length - 1;
-    if (lastIndex === -1 || dates[lastIndex] !== nextDate) {
+    if (lastIndex === -1 || dates[lastIndex] !== today) {
         // If no record for today, add a new entry
-        dates.push(nextDate);
+        dates.push(today);
         portfolioHistory.push(totalPortfolioValue);
     } else {
         // Update today's value to reflect any transactions or price changes
@@ -29,15 +25,16 @@ function updatePortfolioChart() {
     }
 
     // Update the chart with new data
-    portfolioChart.data.labels = [...dates];
+    portfolioChart.data.labels = dates;
     portfolioChart.data.datasets.forEach((dataset) => {
-        dataset.data = [...portfolioHistory];
+        dataset.data = portfolioHistory;
     });
     portfolioChart.update();
 
     // Update database with new data
     savePortfolioHistoryToDatabase();
 }
+
 
 document.getElementById('update-cash').addEventListener('click', () => {
     const cashInput = document.getElementById('cash-input');
