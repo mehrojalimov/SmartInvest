@@ -1,11 +1,15 @@
 Step 1: in setup.sql
 Replace "MYPASSWORD" with your postgres password
-Replace "your_rapidapi_key_here" with the api key provided via email
 
-Step 2: create new database table
-npm run setup
+Step 2: create new database locally
+npm run setup:local
 
 Step 3: Run the app
 npm run start
+
+If you have problem when fecthing the API, please visit this site to get a new API key.
+Also try to connect to a different wifi or hotspot in order to succesfully use the API.
+
+https://www.alphavantage.co/support/#api-key
 
 
