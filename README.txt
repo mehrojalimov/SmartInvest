@@ -1,5 +1,6 @@
 Step 1: in setup.sql
 Replace "MYPASSWORD" with your postgres password
+Replace "YOUR_API_KEY" with your API key
 
 Step 2: create new database locally
 npm run setup:local
