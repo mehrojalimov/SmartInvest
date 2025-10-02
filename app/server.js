@@ -1,60 +1,40 @@
+const express = require("express");
+const cookieParser = require("cookie-parser");
+const crypto = require("crypto");
+const DatabaseService = require("./services/database");
+const alphavantage = require("./services/alphAdvantage");
 
-const alphavantage = require("./services/alphAdvantage.js"); 
-
-
-// make this script's dir the cwd
-// b/c npm run start doesn't cd into src/ to run this
-// and if we aren't in its cwd, all relative paths will break
-process.chdir(__dirname);
-
-
-let express = require("express");
-let { Pool } = require("pg");
-let argon2 = require("argon2"); // or bcrypt, whatever
-let cookieParser = require("cookie-parser");
-let crypto = require("crypto");
-let env = require("../env.json");
-
-let host;
-let port = 3000;
-
-/*****************************************************************************************************************
-                                            Set up for Fly.io
-******************************************************************************************************************/
-let databaseConfig;
-
-// fly.io sets NODE_ENV to production automatically, otherwise it's unset when running locally
-if (process.env.NODE_ENV == "production") {
-	host = "0.0.0.0";
-	databaseConfig = { connectionString: process.env.DATABASE_URL };
-} else {
-	host = "localhost";
-  databaseConfig = {
-    user: env.user,
-    host: env.host,
-    database: env.database,
-    password: env.password,
-    port: env.port,
-  };
-}
+// Set up paths relative to project root
 
 let app = express();
+let host = "localhost";
+let port = 3000;
+
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3001');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(express.static("public"));
 app.use(express.json());
 app.use(cookieParser());
 
-
-let pool = new Pool(databaseConfig);
-pool.connect().then(() => {
-  console.log("Connected to database");
-});
+// Initialize database
+const db = new DatabaseService();
 
 /***************************************************************************************************************
                                         Set up token and cookies
 ****************************************************************************************************************/
-// global object for storing tokens
-// in a real app, we'd save them to a db so even if the server exits
-// users will still be logged in when it restarts
+// Global object for storing tokens
 let tokenStorage = {};
 
 /* returns a random 32 byte string */
@@ -62,311 +42,298 @@ function makeToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// must use same cookie options when setting/deleting a given cookie with res.cookie and res.clearCookie
-// or else the cookie won't actually delete
-// remember that the token is essentially a password that must be kept secret
+// Cookie options
 let cookieOptions = {
-  httpOnly: true, // client-side JS can't access this cookie; important to mitigate cross-site scripting attack damage
-  secure: true, // cookie will only be sent over HTTPS connections (and localhost); important so that traffic sniffers can't see it even if our user tried to use an HTTP version of our site, if we supported that
-  sameSite: "strict", // browser will only include this cookie on requests to this domain, not other domains; important to prevent cross-site request forgery attacks
+  httpOnly: true,
+  secure: false, // Set to false for localhost development
+  sameSite: "lax", // Changed from "strict" to "lax" for better compatibility
 };
 
 /******************************************************************************************************************
                                         Set up validate account function
 ******************************************************************************************************************/
 function validateLogin(body) {
-    if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
-      return false;
-    }
-  
-    const username = body.username.trim();
-    const password = body.password;
-  
-    // Username and password rules
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/; // Alphanumeric and underscores, 3-20 chars
-    const minPasswordLength = 8;
-  
-    // Validate username
-    if (!usernameRegex.test(username)) {
-      console.log("Username validation failed");
-      return false;
-    }
-  
-    // Validate password length
-    if (password.length < minPasswordLength) {
-      console.log("Password too short");
-      return false;
-    }
-  
-    return true;
+  if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
+    return false;
   }
-  
+
+  const username = body.username.trim();
+  const password = body.password;
+
+  // Username and password rules
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  const minPasswordLength = 8;
+
+  // Validate username
+  if (!usernameRegex.test(username)) {
+    console.log("Username validation failed");
+    return false;
+  }
+
+  // Validate password length
+  if (password.length < minPasswordLength) {
+    console.log("Password too short");
+    return false;
+  }
+
+  return true;
+}
+
 /*****************************************************************************************************************
                                                 POST and GET methods
 *****************************************************************************************************************/
 
-app.post('/api/portfolio/history', async (req, res) => {
+// Portfolio history endpoints
+app.post('/api/portfolio/history', authorize, async (req, res) => {
   const { portfolioHistory, dates } = req.body;
+  const userId = req.userId;
 
   try {
-      // Assuming a single user for simplicity
-      await pool.query(`
-          INSERT INTO portfolio_history (user_id, history, last_updated)
-          VALUES ($1, $2::JSONB, NOW())
-          ON CONFLICT (user_id) DO UPDATE
-          SET history = $2::JSONB, last_updated = NOW();
-      `, [1, JSON.stringify({ portfolioHistory, dates })]);
-
-      res.status(200).send('Portfolio history saved successfully.');
+    db.savePortfolioHistory(userId, { portfolioHistory, dates });
+    res.status(200).json({ message: 'Portfolio history saved successfully.' });
   } catch (error) {
-      console.error('Error saving portfolio history:', error);
-      res.status(500).send('Error saving portfolio history.');
+    console.error('Error saving portfolio history:', error);
+    res.status(500).json({ error: 'Error saving portfolio history.' });
   }
 });
 
-app.get('/api/portfolio/history', async (req, res) => {
+app.get('/api/portfolio/history', authorize, async (req, res) => {
+  const userId = req.userId;
+
   try {
-      const result = await pool.query(`
-          SELECT history FROM portfolio_history WHERE user_id = $1
-      `, [1]);
-
-      if (result.rows.length === 0) {
-          return res.status(404).json({ error: 'No history found.' });
-      }
-
-      const { history } = result.rows[0];
-      res.status(200).json(history);
+    const history = db.getPortfolioHistory(userId);
+    if (!history) {
+      return res.status(404).json({ error: 'No history found.' });
+    }
+    res.status(200).json(history);
   } catch (error) {
-      console.error('Error loading portfolio history:', error);
-      res.status(500).send('Error loading portfolio history.');
+    console.error('Error loading portfolio history:', error);
+    res.status(500).json({ error: 'Error loading portfolio history.' });
   }
 });
 
+// User authentication endpoints
+app.post("/api/create", async (req, res) => {
+  const { username, password } = req.body;
 
+  if (!validateLogin(req.body)) {
+    return res.status(400).json({ error: "Invalid username or password format" });
+  }
 
-app.post("/create", async (req, res) => {
-    let { username, password } = req.body;
-  
-    if (!validateLogin(req.body)) {
-      return res.status(400).send({ error: "Invalid username or password format" });
+  try {
+    const user = await db.createUser(username, password);
+    
+    // Auto login
+    let token = makeToken();
+    tokenStorage[token] = user.username;
+    res.cookie("token", token, cookieOptions).status(201).json({ 
+      message: "Account created and logged in",
+      user: { id: user.id, username: user.username }
+    });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    if (error.message === 'Username already exists') {
+      res.status(409).json({ error: "Username already exists" });
+    } else {
+      res.status(500).json({ error: "Internal server error" });
     }
-  
-    try {
-      // Check if the username already exists
-      let userCheck = await pool.query("SELECT 1 FROM users WHERE username = $1", [username]);
-      if (userCheck.rows.length > 0) {
-        return res.status(409).send({ error: "Username already exists" });
-      }
-  
-      // Hash password
-      let hash = await argon2.hash(password);
-      await pool.query("INSERT INTO users (username, password) VALUES ($1, $2)", [username, hash]);
-  
-      // Auto login
-      let token = makeToken();
-      tokenStorage[token] = username;
-      res.cookie("token", token, cookieOptions).status(201).send({ message: "Account created and logged in" });
-  
-    } catch (error) {
-      console.error("Error creating user:", error);
-      res.sendStatus(500);
-    }
-  });
-  
+  }
+});
 
-  app.post("/login", async (req, res) => {
-    let { body } = req;
-  
-    // Validate request body
-    if (!validateLogin(body)) {
-      return res.status(400).send({ error: "Invalid username or password format" });
+app.post("/api/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!validateLogin(req.body)) {
+    return res.status(400).json({ error: "Invalid username or password format" });
+  }
+
+  try {
+    const user = await db.verifyUser(username, password);
+    
+    if (!user) {
+      return res.status(400).json({ error: "Incorrect username or password" });
     }
-  
-    let { username, password } = body;
-    let result;
-  
-    try {
-      // Check if the username exists and get the hashed password
-      result = await pool.query("SELECT password FROM users WHERE username = $1", [username]);
-    } catch (error) {
-      console.error("Database error during SELECT:", error);
-      return res.status(500).send({ error: "Internal server error" });
-    }
-  
-    // If the username doesn't exist
-    if (result.rows.length === 0) {
-      return res.status(400).send({ error: "Incorrect username or password" });
-    }
-  
-    let hash = result.rows[0].password;
-    let verifyResult;
-  
-    try {
-      // Verify the provided password matches the stored hash
-      verifyResult = await argon2.verify(hash, password);
-    } catch (error) {
-      console.error("Error during password verification:", error);
-      return res.status(500).send({ error: "Internal server error" });
-    }
-  
-    // If password does not match
-    if (!verifyResult) {
-      console.log("Incorrect credentials for username:", username);
-      return res.status(400).send({ error: "Incorrect username or password" });
-    }
-  
+
     // Generate and store login token
     let token = makeToken();
     tokenStorage[token] = username;
     console.log("User logged in with token:", token);
-  
-    return res.cookie("token", token, cookieOptions).status(200).send({ message: "Login successful" });
-  });
-  
-  /* Authorization middleware */
-  let authorize = (req, res, next) => {
-    let { token } = req.cookies;
-    if (!token || !tokenStorage.hasOwnProperty(token)) {
-      console.log("Unauthorized access attempt");
-      return res.status(403).send({ error: "Unauthorized access" });
-    }
-    console.log("Authorized token:", token);
-    next();
-  };
-  
 
-app.post("/logout", (req, res) => {
+    return res.cookie("token", token, cookieOptions).status(200).json({ 
+      message: "Login successful",
+      user: { id: user.id, username: user.username }
+    });
+  } catch (error) {
+    console.error("Error during login:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Authorization middleware
+let authorize = (req, res, next) => {
+  let { token } = req.cookies;
+  if (!token || !tokenStorage.hasOwnProperty(token)) {
+    console.log("Unauthorized access attempt");
+    return res.status(403).json({ error: "Unauthorized access" });
+  }
+  
+  // Get username from token and find user
+  const username = tokenStorage[token];
+  const user = db.getUserByUsername(username);
+  
+  if (!user) {
+    console.log("User not found for token");
+    return res.status(403).json({ error: "User not found" });
+  }
+  
+  // Add user info to request
+  req.username = username;
+  req.userId = user.id;
+  console.log("Authorized user:", username, "ID:", user.id);
+  next();
+};
+
+app.post("/api/logout", (req, res) => {
   let { token } = req.cookies;
 
   if (token === undefined) {
     console.log("Already logged out");
-    return res.sendStatus(400); // TODO
+    return res.status(400).json({ error: "Already logged out" });
   }
 
   if (!tokenStorage.hasOwnProperty(token)) {
     console.log("Token doesn't exist");
-    return res.sendStatus(400); // TODO
+    return res.status(400).json({ error: "Invalid token" });
   }
 
-  console.log("Before", tokenStorage);
+  console.log("Before", Object.keys(tokenStorage).length);
   delete tokenStorage[token];
-  console.log("Deleted", tokenStorage);
+  console.log("After", Object.keys(tokenStorage).length);
 
-  return res.clearCookie("token", cookieOptions).send();
+  return res.clearCookie("token", cookieOptions).json({ message: "Logged out successfully" });
 });
 
-app.get("/public", (req, res) => {
-  return res.send("A public message\n");
+// Public endpoints
+app.get("/api/public", (req, res) => {
+  return res.json({ message: "A public message" });
 });
 
-// authorize middleware will be called before request handler
-// authorize will only pass control to this request handler if the user passes authorization
-app.get("/private", authorize, (req, res) => {
-  return res.send("A private message\n");
+// Private endpoints
+app.get("/api/private", authorize, (req, res) => {
+  return res.json({ message: "A private message" });
 });
 
+// Dashboard endpoint
 app.get("/dashboard", authorize, (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");  // Serve the dashboard HTML
+  res.sendFile(__dirname + "/public/dashboard/index.html");
 });
 
-// Fetch stock data from Alphadvantage API
+// Stock data endpoint
 app.get("/api/stock/:symbol", async (req, res) => {
-  const stockSymbol = req.params.symbol.toUpperCase();  // Get the symbol from the URL parameter
+  const stockSymbol = req.params.symbol.toUpperCase();
+
+  // Input validation
+  if (!stockSymbol || stockSymbol.length < 1 || stockSymbol.length > 10) {
+    return res.status(400).json({ error: "Invalid stock symbol" });
+  }
 
   try {
-    const stockData = await alphavantage.getStockPrice(stockSymbol);  // Assuming this service fetches stock data
+    const stockData = await alphavantage.getStockPrice(stockSymbol);
     if (!stockData) {
       return res.status(404).json({ error: "Stock not found" });
     }
     return res.json(stockData);
   } catch (error) {
     console.error("Error fetching stock data:", error);
+    if (error.message.includes('No data found')) {
+      return res.status(404).json({ error: "Stock symbol not found or invalid" });
+    }
     return res.status(500).json({ error: "An error occurred while fetching stock data" });
   }
 });
 
+// Portfolio endpoints
 app.get("/api/portfolio", authorize, async (req, res) => {
-  const username = tokenStorage[req.cookies.token];
+  const userId = req.userId;
 
   try {
-    const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
-    if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
-
-    const user_id = userResult.rows[0].id;
-
-    const portfolio = await pool.query(
-      `SELECT s.stock_name,
-      SUM(p.total_quantity) AS total_quantity
-      FROM portfolio p
-      JOIN stocks s ON p.stock_id = s.stock_id
-      WHERE p.user_id = $1
-      GROUP BY s.stock_name;
-      `,
-      [user_id]
-    );
-
-    res.status(200).json({ portfolio: portfolio.rows });
+    const portfolio = db.getPortfolio(userId);
+    res.status(200).json({ portfolio });
   } catch (error) {
     console.error("Error fetching portfolio:", error);
     res.status(500).json({ error: "Failed to fetch portfolio" });
   }
 });
 
-
 app.post("/api/portfolio/transaction", authorize, async (req, res) => {
-    const { stock_name, transaction_type, quantity } = req.body;
-    const username = tokenStorage[req.cookies.token];
+  const { stock_name, transaction_type, quantity } = req.body;
+  const userId = req.userId;
 
-    try {
-      const userResult = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
-      if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+  // Input validation
+  if (!stock_name || !transaction_type || !quantity) {
+    return res.status(400).json({ error: "Missing required fields: stock_name, transaction_type, quantity" });
+  }
 
-      const user_id = userResult.rows[0].id;
+  if (!['BUY', 'SELL'].includes(transaction_type)) {
+    return res.status(400).json({ error: "transaction_type must be 'BUY' or 'SELL'" });
+  }
 
-      // Insert transaction into the portfolio
-      await pool.query(
-        `INSERT INTO portfolio (user_id, stock_id, transaction_type, quantity, transaction_date)
-        VALUES ($1, (SELECT stock_id FROM stocks WHERE stock_name = $2), $3, $4, CURRENT_TIMESTAMP)`,
-        [user_id, stock_name, transaction_type, quantity]
-      );
+  if (isNaN(quantity) || quantity <= 0) {
+    return res.status(400).json({ error: "quantity must be a positive number" });
+  }
 
-      res.status(200).json({ message: "Transaction saved successfully" });
-    } catch (error) {
-      console.error("Error saving transaction:", error.message);
-      res.status(500).json({ error: "Failed to save transaction" });
-    }
+  try {
+    db.addTransaction(userId, stock_name, transaction_type, parseInt(quantity));
+    res.status(200).json({ message: "Transaction saved successfully" });
+  } catch (error) {
+    console.error("Error saving transaction:", error.message);
+    res.status(500).json({ error: "Failed to save transaction" });
+  }
+});
+
+// Recent transactions endpoint
+app.get("/api/transactions", authorize, async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const transactions = db.getRecentTransactions(userId, 10);
+    res.status(200).json({ transactions });
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "OK", 
+    timestamp: new Date().toISOString(),
+    database: "SQLite",
+    version: "1.0.0"
   });
+});
 
-  // Retrieve all stocks
-  // app.get('/api/stocks', async (req, res) => {
-  //   try {
-  //       const result = await pool.query('SELECT * FROM stocks');
-  //       res.json(result.rows);
-  //   } catch (error) {
-  //       console.error('Error fetching stocks:', error);
-  //       res.status(500).send('Error fetching stocks.');
-  //   }
-  // });
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
 
-  // Save stock to database
-  // app.post('/api/stock', async (req, res) => {
-  //   const { stock_name, stock_date, stock_value } = req.body;
-  //   try {
-  //       await pool.query(
-  //           `INSERT INTO stocks (stock_name, stock_date, stock_value)
-  //           VALUES ($1, $2, $3)
-  //           ON CONFLICT (stock_name, stock_date) DO UPDATE 
-  //           SET stock_value = EXCLUDED.stock_value`,
-  //           [stock_name, stock_date, stock_value]
-  //       );
-  //       res.status(200).send('Stock data saved successfully.');
-  //   } catch (error) {
-  //       console.error('Error saving stock data:', error);
-  //       res.status(500).send('Error saving stock data.');
-  //   }
-  // });
-  
-  
-  app.listen(port, host, () => {
-  console.log(`http://${host}:${port}`);
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+app.listen(port, host, () => {
+  console.log(`🚀 SmartInvest Server running on http://${host}:${port}`);
+  console.log(`📊 Database: SQLite (database.sqlite)`);
+  console.log(`🔑 Demo user: username="demo", password="password123"`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n🛑 Shutting down server...');
+  db.close();
+  process.exit(0);
 });

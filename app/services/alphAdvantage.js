@@ -1,8 +1,6 @@
-const config = require('../../env.json');
-
 const axios = require("axios");
 
-const ALPHADVANTAGE_KEY = config.ALPHADVANTAGE_KEY;
+const ALPHADVANTAGE_KEY = "MSN79IPXQ66H3JFB";
 const BASE_URL = "https://www.alphavantage.co/query";
 
 // Function to fetch stock price data
