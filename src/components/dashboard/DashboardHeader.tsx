@@ -1,7 +1,14 @@
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const DashboardHeader = () => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
     <header className="bg-gradient-primary border-b border-primary/20">
       <div className="container mx-auto px-4 py-6">
@@ -17,11 +24,17 @@ export const DashboardHeader = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <Button variant="secondary" size="sm">
-              Add Asset
-            </Button>
-            <Button variant="outline" size="sm" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
-              Settings
+            <span className="text-white/80 text-sm">
+              Welcome, {user?.username}
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
             </Button>
           </div>
         </div>

@@ -8,6 +8,7 @@ interface Transaction {
   stock_name: string;
   transaction_type: 'BUY' | 'SELL';
   quantity: number;
+  price: number;
   transaction_date: string;
 }
 
@@ -23,6 +24,7 @@ export const RecentTransactions = () => {
       }
       return response.json();
     },
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
   });
 
   if (isLoading) {
@@ -101,14 +103,17 @@ export const RecentTransactions = () => {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {transaction.quantity} shares
+                        {transaction.quantity} shares @ ${transaction.price?.toFixed(2) || '0.00'}
                       </p>
                     </div>
                   </div>
                   
                   <div className="text-right">
                     <p className="font-semibold text-foreground">
-                      {transaction.quantity} shares
+                      ${((transaction.quantity * (transaction.price || 0)).toLocaleString(undefined, { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                      }))}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {date.toLocaleDateString()}

@@ -2,9 +2,36 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { useMemo } from "react";
 
 export const AssetCards = () => {
   const { data: portfolioData, isLoading, error } = usePortfolio();
+
+  // Mock prices for calculation
+  const mockPrices: { [key: string]: { price: number; change: number } } = {
+    'AAPL': { price: 177.30, change: 1.8 },
+    'MSFT': { price: 383.75, change: 2.1 },
+    'TSLA': { price: 249.50, change: -0.5 },
+    'AMZN': { price: 157.25, change: 1.2 },
+    'GOOGL': { price: 144.35, change: 0.8 },
+    'NVDA': { price: 429.75, change: 3.2 }
+  };
+
+  const assetsWithValues = useMemo(() => {
+    if (!portfolioData?.portfolio) return [];
+    
+    return portfolioData.portfolio.map((asset: any) => {
+      const stockData = mockPrices[asset.stock_name] || { price: 0, change: 0 };
+      const totalValue = asset.total_quantity * stockData.price;
+      
+      return {
+        ...asset,
+        currentPrice: stockData.price,
+        change: stockData.change,
+        totalValue
+      };
+    }).sort((a, b) => b.totalValue - a.totalValue);
+  }, [portfolioData?.portfolio]);
 
   if (isLoading) {
     return (
@@ -32,7 +59,7 @@ export const AssetCards = () => {
     );
   }
 
-  const assets = portfolioData?.portfolio || [];
+  const assets = assetsWithValues;
 
   return (
     <Card className="border-border/50">
@@ -50,31 +77,49 @@ export const AssetCards = () => {
             No assets in portfolio yet. Start by searching and buying stocks!
           </p>
         ) : (
-          assets.map((asset, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-semibold text-foreground">{asset.stock_name}</p>
-                  <Badge variant="outline" className="text-xs">
-                    Stock
-                  </Badge>
+          assets.map((asset, index) => {
+            const isPositive = asset.change >= 0;
+            const TrendIcon = isPositive ? TrendingUp : TrendingDown;
+            
+            return (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold text-foreground">{asset.stock_name}</p>
+                    <Badge variant="outline" className="text-xs">
+                      {asset.total_quantity} shares
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      ${asset.currentPrice.toFixed(2)}
+                    </p>
+                    <div className={`flex items-center gap-1 text-xs ${
+                      isPositive ? "text-success" : "text-destructive"
+                    }`}>
+                      <TrendIcon className="w-3 h-3" />
+                      {isPositive ? '+' : ''}{asset.change.toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Shares: {asset.total_quantity}</p>
+                
+                <div className="text-right">
+                  <p className="font-semibold text-foreground">
+                    ${asset.totalValue.toLocaleString(undefined, { 
+                      minimumFractionDigits: 2, 
+                      maximumFractionDigits: 2 
+                    })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Value
+                  </p>
+                </div>
               </div>
-              
-              <div className="text-right">
-                <p className="font-semibold text-foreground">
-                  {asset.total_quantity} shares
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  In portfolio
-                </p>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </CardContent>
     </Card>

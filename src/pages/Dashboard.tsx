@@ -4,6 +4,10 @@ import { AssetCards } from "@/components/dashboard/AssetCards";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { StockSearch } from "@/components/dashboard/StockSearch";
+import { MarketOverview } from "@/components/dashboard/MarketOverview";
+import { RealTimeMarketData } from "@/components/dashboard/RealTimeMarketData";
+import { StockScreener } from "@/components/dashboard/StockScreener";
+import { PortfolioAnalytics } from "@/components/dashboard/PortfolioAnalytics";
 
 const Dashboard = () => {
   return (
@@ -25,6 +29,16 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <StockSearch />
           <RecentTransactions />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RealTimeMarketData />
+          <MarketOverview />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <StockScreener />
+          <PortfolioAnalytics />
         </div>
       </main>
     </div>

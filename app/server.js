@@ -2,17 +2,17 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 const DatabaseService = require("./services/database");
-const alphavantage = require("./services/alphAdvantage");
+const { getStockPrice, getRealTimeMarketData, getTechnicalIndicators, getStockScreener } = require("./services/alphAdvantage");
 
 // Set up paths relative to project root
 
 let app = express();
 let host = "localhost";
-let port = 3000;
+let port = 3001;
 
 // CORS middleware
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:3001');
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -36,6 +36,30 @@ const db = new DatabaseService();
 ****************************************************************************************************************/
 // Global object for storing tokens
 let tokenStorage = {};
+
+// Authorization middleware
+let authorize = (req, res, next) => {
+  let { token } = req.cookies;
+  if (!token || !tokenStorage.hasOwnProperty(token)) {
+    console.log("Unauthorized access attempt");
+    return res.status(403).json({ error: "Unauthorized access" });
+  }
+  
+  // Get username from token and find user
+  const username = tokenStorage[token];
+  const user = db.getUserByUsername(username);
+  
+  if (!user) {
+    console.log("User not found for token");
+    return res.status(403).json({ error: "User not found" });
+  }
+  
+  // Add user info to request
+  req.username = username;
+  req.userId = user.id;
+  console.log("Authorized user:", username, "ID:", user.id);
+  next();
+};
 
 /* returns a random 32 byte string */
 function makeToken() {
@@ -169,29 +193,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Authorization middleware
-let authorize = (req, res, next) => {
-  let { token } = req.cookies;
-  if (!token || !tokenStorage.hasOwnProperty(token)) {
-    console.log("Unauthorized access attempt");
-    return res.status(403).json({ error: "Unauthorized access" });
-  }
-  
-  // Get username from token and find user
-  const username = tokenStorage[token];
-  const user = db.getUserByUsername(username);
-  
-  if (!user) {
-    console.log("User not found for token");
-    return res.status(403).json({ error: "User not found" });
-  }
-  
-  // Add user info to request
-  req.username = username;
-  req.userId = user.id;
-  console.log("Authorized user:", username, "ID:", user.id);
-  next();
-};
 
 app.post("/api/logout", (req, res) => {
   let { token } = req.cookies;
@@ -223,6 +224,14 @@ app.get("/api/private", authorize, (req, res) => {
   return res.json({ message: "A private message" });
 });
 
+// Auth check endpoint
+app.get("/api/auth/check", authorize, (req, res) => {
+  return res.json({ 
+    authenticated: true, 
+    user: { id: req.userId, username: req.username } 
+  });
+});
+
 // Dashboard endpoint
 app.get("/dashboard", authorize, (req, res) => {
   res.sendFile(__dirname + "/public/dashboard/index.html");
@@ -238,7 +247,7 @@ app.get("/api/stock/:symbol", async (req, res) => {
   }
 
   try {
-    const stockData = await alphavantage.getStockPrice(stockSymbol);
+    const stockData = await getStockPrice(stockSymbol);
     if (!stockData) {
       return res.status(404).json({ error: "Stock not found" });
     }
@@ -283,11 +292,36 @@ app.post("/api/portfolio/transaction", authorize, async (req, res) => {
   }
 
   try {
-    db.addTransaction(userId, stock_name, transaction_type, parseInt(quantity));
+    // Get current stock price
+    const stockData = await getStockPrice(stock_name);
+    const stockPrice = parseFloat(stockData.price);
+    
+    db.addTransaction(userId, stock_name, transaction_type, parseInt(quantity), stockPrice);
     res.status(200).json({ message: "Transaction saved successfully" });
   } catch (error) {
     console.error("Error saving transaction:", error.message);
-    res.status(500).json({ error: "Failed to save transaction" });
+    if (error.message === 'Insufficient stocks to sell') {
+      res.status(400).json({ error: "Insufficient stocks to sell" });
+    } else if (error.message === 'Cannot sell stock you do not own') {
+      res.status(400).json({ error: "Cannot sell stock you do not own" });
+    } else if (error.message === 'Insufficient cash balance') {
+      res.status(400).json({ error: "Insufficient cash balance" });
+    } else {
+      res.status(500).json({ error: "Failed to save transaction" });
+    }
+  }
+});
+
+// Cash balance endpoint
+app.get("/api/cash-balance", authorize, async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const cashBalance = db.getUserCashBalance(userId);
+    res.status(200).json({ cashBalance });
+  } catch (error) {
+    console.error("Error fetching cash balance:", error);
+    res.status(500).json({ error: "Failed to fetch cash balance" });
   }
 });
 
@@ -306,12 +340,162 @@ app.get("/api/transactions", authorize, async (req, res) => {
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     timestamp: new Date().toISOString(),
     database: "SQLite",
     version: "1.0.0"
   });
+});
+
+// Real-time market data endpoint
+app.get("/api/market/realtime", async (req, res) => {
+  try {
+    const symbols = req.query.symbols ? req.query.symbols.split(',') : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'];
+    const marketData = await getRealTimeMarketData(symbols);
+    
+    if (!marketData) {
+      return res.status(503).json({ error: "Real-time data unavailable" });
+    }
+    
+    res.json(marketData);
+  } catch (error) {
+    console.error("Error fetching real-time market data:", error);
+    res.status(500).json({ error: "Failed to fetch real-time data" });
+  }
+});
+
+// Technical indicators endpoint for algorithmic screening
+app.get("/api/indicators/:symbol", async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { indicator = 'RSI' } = req.query;
+    
+    const indicators = await getTechnicalIndicators(symbol, indicator);
+    
+    if (!indicators) {
+      return res.status(404).json({ error: "Indicators not found" });
+    }
+    
+    res.json(indicators);
+  } catch (error) {
+    console.error("Error fetching technical indicators:", error);
+    res.status(500).json({ error: "Failed to fetch indicators" });
+  }
+});
+
+// Stock screener endpoint for algorithmic screening
+app.get("/api/screener", async (req, res) => {
+  try {
+    const criteria = {
+      min_volume: req.query.min_volume,
+      max_volume: req.query.max_volume,
+      min_market_cap: req.query.min_market_cap,
+      max_market_cap: req.query.max_market_cap,
+      sector: req.query.sector,
+      industry: req.query.industry
+    };
+    
+    // Remove undefined values
+    Object.keys(criteria).forEach(key => 
+      criteria[key] === undefined && delete criteria[key]
+    );
+    
+    const screenerData = await getStockScreener(criteria);
+    
+    if (!screenerData) {
+      return res.status(503).json({ error: "Screener data unavailable" });
+    }
+    
+    res.json(screenerData);
+  } catch (error) {
+    console.error("Error fetching screener data:", error);
+    res.status(500).json({ error: "Failed to fetch screener data" });
+  }
+});
+
+// Portfolio analytics endpoint with advanced metrics
+app.get("/api/portfolio/analytics", authorize, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    const portfolio = db.getUserPortfolio(userId);
+    const transactions = db.getRecentTransactions(userId, 100);
+    const cashBalance = db.getUserCashBalance(userId);
+    
+    // Calculate advanced portfolio metrics
+    let totalValue = cashBalance;
+    let totalCost = 0;
+    let unrealizedPnL = 0;
+    let realizedPnL = 0;
+    const assetAllocation = {};
+    
+    for (const holding of portfolio) {
+      try {
+        const stockData = await getStockPrice(holding.stock_name);
+        const currentPrice = parseFloat(stockData.price);
+        const marketValue = holding.total_quantity * currentPrice;
+        
+        totalValue += marketValue;
+        assetAllocation[holding.stock_name] = {
+          quantity: holding.total_quantity,
+          currentPrice: currentPrice,
+          marketValue: marketValue,
+          allocation: (marketValue / totalValue) * 100
+        };
+        
+        // Calculate cost basis from transactions
+        const stockTransactions = transactions.filter(t => t.stock_name === holding.stock_name);
+        let costBasis = 0;
+        let totalQuantity = 0;
+        
+        for (const tx of stockTransactions) {
+          if (tx.transaction_type === 'BUY') {
+            costBasis += tx.quantity * tx.price;
+            totalQuantity += tx.quantity;
+          } else if (tx.transaction_type === 'SELL') {
+            const avgCost = costBasis / totalQuantity;
+            realizedPnL += (tx.price - avgCost) * tx.quantity;
+            costBasis -= avgCost * tx.quantity;
+            totalQuantity -= tx.quantity;
+          }
+        }
+        
+        if (totalQuantity > 0) {
+          const avgCost = costBasis / totalQuantity;
+          totalCost += costBasis;
+          unrealizedPnL += (currentPrice - avgCost) * holding.total_quantity;
+        }
+      } catch (error) {
+        console.error(`Error calculating metrics for ${holding.stock_name}:`, error);
+      }
+    }
+    
+    const totalPnL = realizedPnL + unrealizedPnL;
+    const totalReturn = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
+    
+    res.json({
+      totalValue: totalValue,
+      totalCost: totalCost,
+      cashBalance: cashBalance,
+      realizedPnL: realizedPnL,
+      unrealizedPnL: unrealizedPnL,
+      totalPnL: totalPnL,
+      totalReturn: totalReturn,
+      assetAllocation: assetAllocation,
+      portfolioDiversification: Object.keys(assetAllocation).length,
+      riskMetrics: {
+        concentration: Math.max(...Object.values(assetAllocation).map(a => a.allocation)),
+        diversification: Object.keys(assetAllocation).length
+      }
+    });
+  } catch (error) {
+    console.error("Error calculating portfolio analytics:", error);
+    res.status(500).json({ error: "Failed to calculate analytics" });
+  }
 });
 
 // Error handling middleware

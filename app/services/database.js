@@ -16,8 +16,8 @@ class DatabaseService {
     // Create tables
     this.createTables();
     
-    // Insert sample data
-    this.insertSampleData();
+    // Insert sample data synchronously
+    this.insertSampleDataSync();
   }
 
   createTables() {
@@ -27,6 +27,7 @@ class DatabaseService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
+        cash_balance REAL DEFAULT 10000.00,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -70,11 +71,30 @@ class DatabaseService {
         stock_id INTEGER NOT NULL,
         transaction_type TEXT NOT NULL CHECK (transaction_type IN ('BUY', 'SELL')),
         quantity INTEGER NOT NULL,
+        price REAL NOT NULL,
         transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
         FOREIGN KEY (stock_id) REFERENCES stocks (stock_id) ON DELETE CASCADE
       )
     `);
+  }
+
+  insertSampleDataSync() {
+    // Check if we already have data
+    const userCount = this.db.prepare('SELECT COUNT(*) as count FROM users').get();
+    if (userCount.count > 0) return;
+
+    // Create a default user with a simple password hash for demo
+    const hashedPassword = '$argon2id$v=19$m=65536,t=3,p=4$dummy$dummy'; // Dummy hash for demo
+    this.db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('demo', hashedPassword);
+
+    // Insert some sample stocks
+    const sampleStocks = ['AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL'];
+
+    const insertStock = this.db.prepare('INSERT INTO stocks (stock_name) VALUES (?)');
+    sampleStocks.forEach(stock => insertStock.run(stock));
+
+    console.log('Sample data inserted successfully');
   }
 
   async insertSampleData() {
@@ -113,6 +133,11 @@ class DatabaseService {
     const user = this.db.prepare('SELECT id, password FROM users WHERE username = ?').get(username);
     if (!user) return null;
 
+    // Special case for demo user with dummy hash
+    if (username === 'demo' && user.password === '$argon2id$v=19$m=65536,t=3,p=4$dummy$dummy') {
+      return password === 'password123' ? { id: user.id, username } : null;
+    }
+
     const isValid = await argon2.verify(user.password, password);
     return isValid ? { id: user.id, username } : null;
   }
@@ -122,7 +147,16 @@ class DatabaseService {
   }
 
   getUserByUsername(username) {
-    return this.db.prepare('SELECT id, username FROM users WHERE username = ?').get(username);
+    return this.db.prepare('SELECT id, username, cash_balance FROM users WHERE username = ?').get(username);
+  }
+
+  getUserCashBalance(userId) {
+    const result = this.db.prepare('SELECT cash_balance FROM users WHERE id = ?').get(userId);
+    return result ? result.cash_balance : 0;
+  }
+
+  updateUserCashBalance(userId, newBalance) {
+    this.db.prepare('UPDATE users SET cash_balance = ? WHERE id = ?').run(newBalance, userId);
   }
 
   // Stock methods
@@ -146,7 +180,7 @@ class DatabaseService {
     `).all(userId);
   }
 
-  addTransaction(userId, stockName, transactionType, quantity) {
+  addTransaction(userId, stockName, transactionType, quantity, stockPrice) {
     // Get or create stock
     let stock = this.getStockByName(stockName);
     if (!stock) {
@@ -154,11 +188,36 @@ class DatabaseService {
       stock = { stock_id: stockId };
     }
 
+    const totalCost = quantity * stockPrice;
+    const currentCashBalance = this.getUserCashBalance(userId);
+
+    // Check if user has enough cash to buy or enough stocks to sell
+    if (transactionType === 'BUY') {
+      if (currentCashBalance < totalCost) {
+        throw new Error('Insufficient cash balance');
+      }
+    } else if (transactionType === 'SELL') {
+      const existingPortfolio = this.db.prepare(`
+        SELECT total_quantity FROM portfolio 
+        WHERE user_id = ? AND stock_id = ?
+      `).get(userId, stock.stock_id);
+      
+      if (!existingPortfolio || existingPortfolio.total_quantity < quantity) {
+        throw new Error('Insufficient stocks to sell');
+      }
+    }
+
     // Add transaction
     this.db.prepare(`
-      INSERT INTO transactions (user_id, stock_id, transaction_type, quantity)
-      VALUES (?, ?, ?, ?)
-    `).run(userId, stock.stock_id, transactionType, quantity);
+      INSERT INTO transactions (user_id, stock_id, transaction_type, quantity, price)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(userId, stock.stock_id, transactionType, quantity, stockPrice);
+
+    // Update cash balance
+    const newCashBalance = transactionType === 'BUY' 
+      ? currentCashBalance - totalCost 
+      : currentCashBalance + totalCost;
+    this.updateUserCashBalance(userId, newCashBalance);
 
     // Update portfolio
     const existingPortfolio = this.db.prepare(`
@@ -181,6 +240,9 @@ class DatabaseService {
         INSERT INTO portfolio (user_id, stock_id, total_quantity)
         VALUES (?, ?, ?)
       `).run(userId, stock.stock_id, quantity);
+    } else {
+      // This should not happen due to the check above, but just in case
+      throw new Error('Cannot sell stock you do not own');
     }
   }
 

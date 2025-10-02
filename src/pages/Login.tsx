@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,35 +14,32 @@ const Login = () => {
     password: "",
   });
   const { toast } = useToast();
+  const { user, login, register } = useAuth();
+
+  // Redirect if already logged in
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      const response = await fetch(`/api/${isLogin ? 'login' : 'create'}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
+      const success = isLogin 
+        ? await login(formData.username, formData.password)
+        : await register(formData.username, formData.password);
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (success) {
         toast({
           title: "Success!",
-          description: data.message,
+          description: isLogin ? "Login successful!" : "Account created successfully!",
         });
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1000);
+        // Navigation will happen automatically due to user state change
       } else {
         toast({
           title: "Error",
-          description: data.error || 'An error occurred',
+          description: isLogin ? "Invalid username or password" : "Username already exists or invalid format",
           variant: "destructive",
         });
       }
