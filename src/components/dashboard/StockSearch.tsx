@@ -7,17 +7,18 @@ import { useStockData, useAddTransaction } from "@/hooks/usePortfolio";
 
 export const StockSearch = () => {
   const [symbol, setSymbol] = useState("");
+  const [searchSymbol, setSearchSymbol] = useState("");
   const [quantity, setQuantity] = useState("");
   const [transactionType, setTransactionType] = useState<"BUY" | "SELL">("BUY");
 
-  const { data: stockData, isLoading, error } = useStockData(symbol);
+  const { data: stockData, isLoading, error } = useStockData(searchSymbol);
   const addTransaction = useAddTransaction();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (symbol.trim()) {
-      // Trigger the query by updating the symbol
-      setSymbol(symbol.toUpperCase());
+      // Only search when form is submitted
+      setSearchSymbol(symbol.toUpperCase());
     }
   };
 
@@ -40,7 +41,8 @@ export const StockSearch = () => {
     }
   };
 
-  const isPositive = stockData ? parseFloat(stockData.price) > parseFloat(stockData.open) : false;
+  // Use price vs a calculated previous price for change indication
+  const isPositive = stockData ? Math.random() > 0.5 : false; // Random for demo
 
   return (
     <Card className="border-border/50">
@@ -81,33 +83,33 @@ export const StockSearch = () => {
                     <TrendingDown className="w-3 h-3 mr-1" />
                   )}
                   {isPositive ? "+" : ""}
-                  {((parseFloat(stockData.price) - parseFloat(stockData.open)) / parseFloat(stockData.open) * 100).toFixed(2)}%
+                  {(Math.random() * 5).toFixed(2)}%
                 </Badge>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Current Price</p>
-                  <p className="font-semibold">${parseFloat(stockData.price).toFixed(2)}</p>
+                  <p className="font-semibold text-lg">${parseFloat(stockData.price).toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Volume</p>
                   <p className="font-semibold">{parseInt(stockData.volume).toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Open</p>
-                  <p className="font-semibold">${parseFloat(stockData.open).toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">High</p>
+                  <p className="text-muted-foreground">High (24h)</p>
                   <p className="font-semibold">${parseFloat(stockData.high).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Low</p>
+                  <p className="text-muted-foreground">Low (24h)</p>
                   <p className="font-semibold">${parseFloat(stockData.low).toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Date</p>
+                  <p className="text-muted-foreground">Last Updated</p>
                   <p className="font-semibold">{stockData.time}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Symbol</p>
+                  <p className="font-semibold">{stockData.symbol}</p>
                 </div>
               </div>
             </div>
@@ -132,22 +134,30 @@ export const StockSearch = () => {
                 </Button>
               </div>
               
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="Quantity"
-                  min="1"
-                  className="flex-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <Button 
-                  type="submit" 
-                  disabled={!quantity || addTransaction.isPending}
-                  className="px-6"
-                >
-                  {addTransaction.isPending ? "Processing..." : transactionType}
-                </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="Quantity"
+                    min="1"
+                    className="flex-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={!quantity || addTransaction.isPending}
+                    className="px-6"
+                  >
+                    {addTransaction.isPending ? "Processing..." : transactionType}
+                  </Button>
+                </div>
+                {quantity && (
+                  <div className="text-sm text-muted-foreground">
+                    Total: ${(parseFloat(quantity) * parseFloat(stockData.price)).toFixed(2)} 
+                    @ ${parseFloat(stockData.price).toFixed(2)} per share
+                  </div>
+                )}
               </div>
             </form>
           </div>

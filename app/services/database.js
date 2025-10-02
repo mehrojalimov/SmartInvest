@@ -271,6 +271,17 @@ class DatabaseService {
     `).all(userId, limit);
   }
 
+  // Get user portfolio
+  getUserPortfolio(userId) {
+    return this.db.prepare(`
+      SELECT p.*, s.stock_name
+      FROM portfolio p
+      JOIN stocks s ON p.stock_id = s.stock_id
+      WHERE p.user_id = ?
+      ORDER BY s.stock_name
+    `).all(userId);
+  }
+
   close() {
     this.db.close();
   }

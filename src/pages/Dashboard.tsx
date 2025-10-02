@@ -5,13 +5,14 @@ import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { StockSearch } from "@/components/dashboard/StockSearch";
 import { MarketOverview } from "@/components/dashboard/MarketOverview";
-import { RealTimeMarketData } from "@/components/dashboard/RealTimeMarketData";
 import { StockScreener } from "@/components/dashboard/StockScreener";
 import { PortfolioAnalytics } from "@/components/dashboard/PortfolioAnalytics";
+import { MovingTicker } from "@/components/dashboard/MovingTicker";
 
 const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
+      <MovingTicker />
       <DashboardHeader />
       
       <main className="container mx-auto px-4 py-8 space-y-8">
@@ -31,8 +32,7 @@ const Dashboard = () => {
           <RecentTransactions />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RealTimeMarketData />
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           <MarketOverview />
         </div>
         

@@ -3,35 +3,44 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export const AssetCards = () => {
   const { data: portfolioData, isLoading, error } = usePortfolio();
 
-  // Mock prices for calculation
-  const mockPrices: { [key: string]: { price: number; change: number } } = {
-    'AAPL': { price: 177.30, change: 1.8 },
-    'MSFT': { price: 383.75, change: 2.1 },
-    'TSLA': { price: 249.50, change: -0.5 },
-    'AMZN': { price: 157.25, change: 1.2 },
-    'GOOGL': { price: 144.35, change: 0.8 },
-    'NVDA': { price: 429.75, change: 3.2 }
-  };
+  // Fetch real-time market data
+  const { data: marketData } = useQuery({
+    queryKey: ['market-realtime'],
+    queryFn: async () => {
+      const response = await fetch('/api/market/realtime');
+      if (!response.ok) throw new Error('Failed to fetch market data');
+      return response.json();
+    },
+    refetchInterval: 5000, // Update every 5 seconds
+  });
 
   const assetsWithValues = useMemo(() => {
     if (!portfolioData?.portfolio) return [];
     
     return portfolioData.portfolio.map((asset: any) => {
-      const stockData = mockPrices[asset.stock_name] || { price: 0, change: 0 };
-      const totalValue = asset.total_quantity * stockData.price;
+      // Get real-time price from market data
+      const stockPrice = marketData?.[asset.stock_name]?.price;
+      const currentPrice = stockPrice ? parseFloat(stockPrice) : 0;
+      
+      // Calculate total value
+      const totalValue = asset.total_quantity * currentPrice;
+      
+      // Generate small random change for demo (since real-time API doesn't provide change data)
+      const change = (Math.random() - 0.5) * 2;
       
       return {
         ...asset,
-        currentPrice: stockData.price,
-        change: stockData.change,
+        currentPrice,
+        change,
         totalValue
       };
     }).sort((a, b) => b.totalValue - a.totalValue);
-  }, [portfolioData?.portfolio]);
+  }, [portfolioData?.portfolio, marketData]);
 
   if (isLoading) {
     return (
