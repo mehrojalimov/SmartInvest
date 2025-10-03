@@ -104,6 +104,56 @@ function validateLogin(body) {
   return true;
 }
 
+// Enhanced validation function for registration with detailed error messages
+function validateRegistration(body) {
+  if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
+    return { valid: false, error: "Username and password are required" };
+  }
+
+  const username = body.username.trim();
+  const password = body.password;
+
+  // Username rules
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  
+  // Password rules
+  const minPasswordLength = 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumbers = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  // Validate username
+  if (username.length < 3) {
+    return { valid: false, error: "Username must be at least 3 characters long" };
+  }
+  if (username.length > 20) {
+    return { valid: false, error: "Username must be no more than 20 characters long" };
+  }
+  if (!usernameRegex.test(username)) {
+    return { valid: false, error: "Username can only contain letters, numbers, and underscores" };
+  }
+
+  // Validate password
+  if (password.length < minPasswordLength) {
+    return { valid: false, error: "Password must be at least 8 characters long" };
+  }
+  if (!hasUpperCase) {
+    return { valid: false, error: "Password must contain at least one uppercase letter" };
+  }
+  if (!hasLowerCase) {
+    return { valid: false, error: "Password must contain at least one lowercase letter" };
+  }
+  if (!hasNumbers) {
+    return { valid: false, error: "Password must contain at least one number" };
+  }
+  if (!hasSpecialChar) {
+    return { valid: false, error: "Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)" };
+  }
+
+  return { valid: true };
+}
+
 /*****************************************************************************************************************
                                                 POST and GET methods
 *****************************************************************************************************************/
@@ -141,8 +191,10 @@ app.get('/api/portfolio/history', authorize, async (req, res) => {
 app.post("/api/create", async (req, res) => {
   const { username, password } = req.body;
 
-  if (!validateLogin(req.body)) {
-    return res.status(400).json({ error: "Invalid username or password format" });
+  // Validate registration with detailed error messages
+  const validation = validateRegistration(req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
   }
 
   try {
@@ -158,7 +210,7 @@ app.post("/api/create", async (req, res) => {
   } catch (error) {
     console.error("Error creating user:", error);
     if (error.message === 'Username already exists') {
-      res.status(409).json({ error: "Username already exists" });
+      res.status(409).json({ error: "Account already exists with this username" });
     } else {
       res.status(500).json({ error: "Internal server error" });
     }
