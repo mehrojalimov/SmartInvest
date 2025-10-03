@@ -127,7 +127,7 @@ export const StockSearch = () => {
                   type="button"
                   variant={transactionType === "BUY" ? "default" : "outline"}
                   onClick={() => setTransactionType("BUY")}
-                  className="flex-1"
+                  className={`flex-1 ${transactionType === "BUY" ? "bg-green-600 hover:bg-green-700" : ""}`}
                 >
                   Buy
                 </Button>
@@ -135,7 +135,7 @@ export const StockSearch = () => {
                   type="button"
                   variant={transactionType === "SELL" ? "default" : "outline"}
                   onClick={() => setTransactionType("SELL")}
-                  className="flex-1"
+                  className={`flex-1 ${transactionType === "SELL" ? "bg-red-600 hover:bg-red-700" : ""}`}
                 >
                   Sell
                 </Button>
@@ -154,9 +154,9 @@ export const StockSearch = () => {
                   <Button 
                     type="submit" 
                     disabled={!quantity || addTransaction.isPending}
-                    className="px-6"
+                    className={`px-6 ${transactionType === "BUY" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
                   >
-                    {addTransaction.isPending ? "Processing..." : transactionType}
+                    {addTransaction.isPending ? "Processing..." : `Execute ${transactionType}`}
                   </Button>
                 </div>
                 {quantity && (

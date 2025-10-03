@@ -529,6 +529,8 @@ app.get("/api/indicators/:symbol", async (req, res) => {
 app.get("/api/screener", async (req, res) => {
   try {
     const criteria = {
+      minPrice: req.query.minPrice,
+      maxPrice: req.query.maxPrice,
       min_volume: req.query.min_volume,
       max_volume: req.query.max_volume,
       min_market_cap: req.query.min_market_cap,

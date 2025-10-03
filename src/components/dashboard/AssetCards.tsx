@@ -2,11 +2,36 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 export const AssetCards = () => {
   const { data: portfolioData, isLoading, error } = usePortfolio();
+  const [cachedPrices, setCachedPrices] = useState<{[key: string]: any}>({});
+
+  // Fetch transaction history for fallback prices
+  const { data: transactionsData } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: async () => {
+      const response = await fetch('/api/transactions', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+      return response.json();
+    },
+  });
+
+  // Load cached prices from localStorage on component mount
+  useEffect(() => {
+    const savedPrices = localStorage.getItem('cachedStockPrices');
+    if (savedPrices) {
+      try {
+        setCachedPrices(JSON.parse(savedPrices));
+      } catch (e) {
+        console.error('Failed to parse cached prices:', e);
+      }
+    }
+  }, []);
 
   // Fetch real-time market data
   const { data: marketData } = useQuery({
@@ -17,6 +42,16 @@ export const AssetCards = () => {
       return response.json();
     },
     refetchInterval: 300000, // Update every 5 minutes (300000ms) for real prices
+    onSuccess: (data) => {
+      // Update cache with fresh data
+      if (data) {
+        setCachedPrices(prev => {
+          const newCache = { ...prev, ...data };
+          localStorage.setItem('cachedStockPrices', JSON.stringify(newCache));
+          return newCache;
+        });
+      }
+    }
   });
 
   const assetsWithValues = useMemo(() => {
@@ -25,9 +60,21 @@ export const AssetCards = () => {
     return portfolioData.portfolio.map((asset: any) => {
       // Get real-time price and change data from market data
       const stockData = marketData?.[asset.stock_name];
-      const currentPrice = stockData?.price ? parseFloat(stockData.price) : 0;
-      const change = stockData?.change ? parseFloat(stockData.change) : 0;
-      const changePercent = stockData?.change_percent ? parseFloat(stockData.change_percent) : 0;
+      const cachedData = cachedPrices[asset.stock_name];
+      
+      // Get last transaction price as final fallback
+      const lastTransaction = transactionsData?.transactions?.find(
+        (t: any) => t.stock_name === asset.stock_name
+      );
+      const transactionPrice = lastTransaction?.price ? parseFloat(lastTransaction.price) : 0;
+      
+      // Use fresh data if available, otherwise fall back to cached data, then transaction price
+      const currentPrice = stockData?.price ? parseFloat(stockData.price) : 
+                          (cachedData?.price ? parseFloat(cachedData.price) : transactionPrice);
+      const change = stockData?.change ? parseFloat(stockData.change) : 
+                    (cachedData?.change ? parseFloat(cachedData.change) : 0);
+      const changePercent = stockData?.change_percent ? parseFloat(stockData.change_percent) : 
+                           (cachedData?.change_percent ? parseFloat(cachedData.change_percent) : 0);
       
       // Calculate total value
       const totalValue = asset.total_quantity * currentPrice;
@@ -35,11 +82,15 @@ export const AssetCards = () => {
       return {
         ...asset,
         currentPrice,
-        change: changePercent, // Use real change percentage from API
-        totalValue
+        change: changePercent,
+        totalValue,
+        isPriceAvailable: currentPrice > 0,
+        isRealTimeData: stockData?.price ? true : false,
+        isCachedData: !stockData?.price && cachedData?.price ? true : false,
+        isTransactionData: !stockData?.price && !cachedData?.price && transactionPrice > 0 ? true : false
       };
     }).sort((a, b) => b.totalValue - a.totalValue);
-  }, [portfolioData?.portfolio, marketData]);
+  }, [portfolioData?.portfolio, marketData, cachedPrices, transactionsData]);
 
   if (isLoading) {
     return (
@@ -103,23 +154,34 @@ export const AssetCards = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-muted-foreground">
-                      ${asset.currentPrice.toFixed(2)}
+                      {asset.isPriceAvailable ? `$${asset.currentPrice.toFixed(2)}` : 'Price unavailable'}
+                      {asset.isPriceAvailable && !asset.isRealTimeData && asset.isCachedData && (
+                        <span className="text-xs text-blue-500 ml-1">(cached)</span>
+                      )}
+                      {asset.isPriceAvailable && !asset.isRealTimeData && asset.isTransactionData && (
+                        <span className="text-xs text-orange-500 ml-1">(last trade)</span>
+                      )}
                     </p>
-                    <div className={`flex items-center gap-1 text-xs ${
-                      isPositive ? "text-success" : "text-destructive"
-                    }`}>
-                      <TrendIcon className="w-3 h-3" />
-                      {isPositive ? '+' : ''}{asset.change.toFixed(1)}%
-                    </div>
+                    {asset.isPriceAvailable && asset.isRealTimeData && (
+                      <div className={`flex items-center gap-1 text-xs ${
+                        isPositive ? "text-success" : "text-destructive"
+                      }`}>
+                        <TrendIcon className="w-3 h-3" />
+                        {isPositive ? '+' : ''}{asset.change.toFixed(1)}%
+                      </div>
+                    )}
                   </div>
                 </div>
                 
                 <div className="text-right">
                   <p className="font-semibold text-foreground">
-                    ${asset.totalValue.toLocaleString(undefined, { 
-                      minimumFractionDigits: 2, 
-                      maximumFractionDigits: 2 
-                    })}
+                    {asset.isPriceAvailable ? 
+                      `$${asset.totalValue.toLocaleString(undefined, { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                      })}` : 
+                      'Unavailable'
+                    }
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Total Value

@@ -10,111 +10,7 @@ const ALPHA_VANTAGE_KEY = "demo";
 // IEX Cloud API Configuration (Backup)
 const IEX_CLOUD_KEY = "pk_test_123456789";
 
-// Enhanced mock data with more realistic and varied prices
-const mockStockData = {
-  'AAPL': {
-    symbol: 'AAPL',
-    time: '2024-10-02',
-    open: '175.50',
-    high: '178.20',
-    low: '174.80',
-    price: '177.30',
-    volume: '45000000',
-    change: '1.80',
-    change_percent: '1.03'
-  },
-  'MSFT': {
-    symbol: 'MSFT',
-    time: '2024-10-02',
-    open: '380.25',
-    high: '385.10',
-    low: '379.50',
-    price: '383.75',
-    volume: '28000000',
-    change: '3.50',
-    change_percent: '0.92'
-  },
-  'TSLA': {
-    symbol: 'TSLA',
-    time: '2024-10-02',
-    open: '245.80',
-    high: '252.30',
-    low: '243.50',
-    price: '249.50',
-    volume: '40000000',
-    change: '3.70',
-    change_percent: '1.51'
-  },
-  'AMZN': {
-    symbol: 'AMZN',
-    time: '2024-10-02',
-    open: '155.20',
-    high: '159.80',
-    low: '154.50',
-    price: '157.25',
-    volume: '35000000',
-    change: '2.05',
-    change_percent: '1.32'
-  },
-  'GOOGL': {
-    symbol: 'GOOGL',
-    time: '2024-10-02',
-    open: '142.80',
-    high: '146.20',
-    low: '141.50',
-    price: '144.35',
-    volume: '20000000',
-    change: '1.55',
-    change_percent: '1.09'
-  },
-  'NVDA': {
-    symbol: 'NVDA',
-    time: '2024-10-02',
-    open: '425.50',
-    high: '435.20',
-    low: '422.80',
-    price: '429.75',
-    volume: '30000000',
-    change: '4.25',
-    change_percent: '1.00'
-  },
-  'META': {
-    symbol: 'META',
-    time: '2024-10-02',
-    open: '320.50',
-    high: '325.80',
-    low: '318.20',
-    price: '323.45',
-    volume: '25000000'
-  },
-  'NFLX': {
-    symbol: 'NFLX',
-    time: '2024-10-02',
-    open: '485.20',
-    high: '492.50',
-    low: '482.80',
-    price: '488.75',
-    volume: '15000000'
-  },
-  'AMD': {
-    symbol: 'AMD',
-    time: '2024-10-02',
-    open: '125.80',
-    high: '129.50',
-    low: '124.20',
-    price: '127.20',
-    volume: '35000000'
-  },
-  'INTC': {
-    symbol: 'INTC',
-    time: '2024-10-02',
-    open: '42.80',
-    high: '44.20',
-    low: '42.10',
-    price: '43.25',
-    volume: '30000000'
-  }
-};
+// No mock data - all data must come from real APIs
 
 // Helper function to ensure proper OHLC data
 function ensureProperOHLC(stockData) {
@@ -398,34 +294,10 @@ async function getStockPrice(symbol) {
     console.error("IEX Cloud API failed:", error.message);
   }
   
-  // Fall back to mock data for known symbols
-  console.log(`All APIs failed, using mock data for ${symbolUpper}`);
-  if (mockStockData[symbolUpper]) {
-    return ensureProperOHLC(mockStockData[symbolUpper]);
-  }
+  // All APIs failed - return error for unknown symbol
+  console.log(`All APIs failed for ${symbolUpper} - symbol not found`);
+  throw new Error(`Unknown symbol: ${symbolUpper}`);
   
-  // Generate mock data for unknown symbols
-  const mockPrice = (Math.random() * 500 + 50).toFixed(2);
-  const mockOpen = (parseFloat(mockPrice) + (Math.random() - 0.5) * 10).toFixed(2);
-  const mockHigh = (parseFloat(mockPrice) + Math.random() * 5).toFixed(2);
-  const mockLow = (parseFloat(mockPrice) - Math.random() * 5).toFixed(2);
-  const mockVolume = Math.floor(Math.random() * 50000000 + 10000000).toString();
-  
-  // Calculate change from open to current price
-  const change = parseFloat(mockPrice) - parseFloat(mockOpen);
-  const changePercent = (change / parseFloat(mockOpen)) * 100;
-  
-  return ensureProperOHLC({
-    symbol: symbolUpper,
-    time: new Date().toISOString().split('T')[0],
-    open: mockOpen,
-    high: mockHigh,
-    low: mockLow,
-    price: mockPrice,
-    volume: mockVolume,
-    change: change.toFixed(2),
-    change_percent: changePercent.toFixed(2)
-  });
 }
 
 // Function to get real-time market data for multiple symbols (for live updates)
@@ -528,126 +400,138 @@ async function getTechnicalIndicators(symbol, indicator = 'RSI') {
     return response.data;
   } catch (error) {
     console.error("12 Data indicators API failed:", error.message);
-    
-    // Return mock technical indicators
-    return {
-      meta: {
-        symbol: symbol,
-        indicator: indicator,
-        interval: '1day',
-        time_period: 14
-      },
-      values: [
-        { datetime: new Date().toISOString().split('T')[0], [indicator.toLowerCase()]: (Math.random() * 100).toFixed(2) }
-      ]
-    };
+    throw new Error(`Failed to fetch technical indicators for ${symbol}`);
   }
 }
 
-// Function to get stock screener data
+// Function to get stock screener data with real financial information
 async function getStockScreener(criteria = {}) {
   try {
-    const twelveDataUrl = `${TWELVE_DATA_BASE_URL}/stocks`;
-    const params = {
-      apikey: TWELVE_DATA_KEY,
-      country: 'United States',
-      exchange: 'NASDAQ',
-      format: 'JSON',
-      ...criteria
-    };
-    
-    const response = await axios.get(twelveDataUrl, { 
-      params,
-      timeout: 10000
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error("12 Data screener API failed:", error.message);
-    
-    // Return mock screener data when API fails
-    const mockStocks = [
-      { 
-        symbol: 'AAPL', 
-        name: 'Apple Inc.', 
-        price: 177.30, 
-        change: 1.8, 
-        change_percent: 1.02,
-        volume: 45000000, 
-        market_cap: 2800000000000,
-        sector: 'Technology',
-        industry: 'Consumer Electronics',
-        rsi: 65.2,
-        pe_ratio: 28.5
-      },
-      { 
-        symbol: 'MSFT', 
-        name: 'Microsoft Corporation', 
-        price: 383.75, 
-        change: 2.1, 
-        change_percent: 0.55,
-        volume: 25000000, 
-        market_cap: 2850000000000,
-        sector: 'Technology',
-        industry: 'Software',
-        rsi: 58.7,
-        pe_ratio: 32.1
-      },
-      { 
-        symbol: 'GOOGL', 
-        name: 'Alphabet Inc.', 
-        price: 144.35, 
-        change: 0.8, 
-        change_percent: 0.56,
-        volume: 20000000, 
-        market_cap: 1800000000000,
-        sector: 'Technology',
-        industry: 'Internet',
-        rsi: 62.3,
-        pe_ratio: 25.8
-      },
-      { 
-        symbol: 'AMZN', 
-        name: 'Amazon.com Inc.', 
-        price: 157.25, 
-        change: 1.2, 
-        change_percent: 0.77,
-        volume: 30000000, 
-        market_cap: 1600000000000,
-        sector: 'Consumer Discretionary',
-        industry: 'E-commerce',
-        rsi: 55.9,
-        pe_ratio: 45.2
-      },
-      { 
-        symbol: 'TSLA', 
-        name: 'Tesla Inc.', 
-        price: 249.50, 
-        change: -0.5, 
-        change_percent: -0.20,
-        volume: 40000000, 
-        market_cap: 800000000000,
-        sector: 'Consumer Discretionary',
-        industry: 'Automotive',
-        rsi: 42.1,
-        pe_ratio: 68.3
-      },
-      { 
-        symbol: 'NVDA', 
-        name: 'NVIDIA Corporation', 
-        price: 429.75, 
-        change: 3.2, 
-        change_percent: 0.75,
-        volume: 35000000, 
-        market_cap: 1100000000000,
-        sector: 'Technology',
-        industry: 'Semiconductors',
-        rsi: 71.8,
-        pe_ratio: 55.4
-      }
+    // Curated list of major stocks with known sectors and industries
+    const majorStocks = [
+      // Technology
+      { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology', industry: 'Consumer Electronics' },
+      { symbol: 'MSFT', name: 'Microsoft Corporation', sector: 'Technology', industry: 'Software' },
+      { symbol: 'GOOGL', name: 'Alphabet Inc.', sector: 'Technology', industry: 'Internet' },
+      { symbol: 'AMZN', name: 'Amazon.com Inc.', sector: 'Consumer Discretionary', industry: 'E-commerce' },
+      { symbol: 'META', name: 'Meta Platforms Inc.', sector: 'Technology', industry: 'Social Media' },
+      { symbol: 'NVDA', name: 'NVIDIA Corporation', sector: 'Technology', industry: 'Semiconductors' },
+      { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'Consumer Discretionary', industry: 'Electric Vehicles' },
+      { symbol: 'NFLX', name: 'Netflix Inc.', sector: 'Communication Services', industry: 'Streaming' },
+      { symbol: 'ADBE', name: 'Adobe Inc.', sector: 'Technology', industry: 'Software' },
+      { symbol: 'CRM', name: 'Salesforce Inc.', sector: 'Technology', industry: 'Software' },
+      
+      // Financial
+      { symbol: 'JPM', name: 'JPMorgan Chase & Co.', sector: 'Financial Services', industry: 'Banking' },
+      { symbol: 'BAC', name: 'Bank of America Corp.', sector: 'Financial Services', industry: 'Banking' },
+      { symbol: 'WFC', name: 'Wells Fargo & Company', sector: 'Financial Services', industry: 'Banking' },
+      { symbol: 'GS', name: 'Goldman Sachs Group Inc.', sector: 'Financial Services', industry: 'Investment Banking' },
+      { symbol: 'V', name: 'Visa Inc.', sector: 'Financial Services', industry: 'Payment Processing' },
+      { symbol: 'MA', name: 'Mastercard Inc.', sector: 'Financial Services', industry: 'Payment Processing' },
+      
+      // Healthcare
+      { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', industry: 'Pharmaceuticals' },
+      { symbol: 'PFE', name: 'Pfizer Inc.', sector: 'Healthcare', industry: 'Pharmaceuticals' },
+      { symbol: 'UNH', name: 'UnitedHealth Group Inc.', sector: 'Healthcare', industry: 'Health Insurance' },
+      { symbol: 'ABBV', name: 'AbbVie Inc.', sector: 'Healthcare', industry: 'Pharmaceuticals' },
+      { symbol: 'MRK', name: 'Merck & Co. Inc.', sector: 'Healthcare', industry: 'Pharmaceuticals' },
+      
+      // Consumer
+      { symbol: 'KO', name: 'The Coca-Cola Company', sector: 'Consumer Staples', industry: 'Beverages' },
+      { symbol: 'PEP', name: 'PepsiCo Inc.', sector: 'Consumer Staples', industry: 'Beverages' },
+      { symbol: 'WMT', name: 'Walmart Inc.', sector: 'Consumer Staples', industry: 'Retail' },
+      { symbol: 'PG', name: 'Procter & Gamble Co.', sector: 'Consumer Staples', industry: 'Household Products' },
+      { symbol: 'NKE', name: 'Nike Inc.', sector: 'Consumer Discretionary', industry: 'Apparel' },
+      
+      // Energy
+      { symbol: 'XOM', name: 'Exxon Mobil Corporation', sector: 'Energy', industry: 'Oil & Gas' },
+      { symbol: 'CVX', name: 'Chevron Corporation', sector: 'Energy', industry: 'Oil & Gas' },
+      
+      // Industrial
+      { symbol: 'BA', name: 'The Boeing Company', sector: 'Industrials', industry: 'Aerospace' },
+      { symbol: 'CAT', name: 'Caterpillar Inc.', sector: 'Industrials', industry: 'Heavy Machinery' },
+      { symbol: 'GE', name: 'General Electric Company', sector: 'Industrials', industry: 'Conglomerate' },
+      
+      // Communication
+      { symbol: 'T', name: 'AT&T Inc.', sector: 'Communication Services', industry: 'Telecommunications' },
+      { symbol: 'VZ', name: 'Verizon Communications Inc.', sector: 'Communication Services', industry: 'Telecommunications' },
+      { symbol: 'DIS', name: 'The Walt Disney Company', sector: 'Communication Services', industry: 'Entertainment' }
     ];
     
-    return { data: mockStocks };
+    // Filter stocks based on criteria
+    let filteredStocks = majorStocks;
+    
+    if (criteria.sector && criteria.sector !== 'All') {
+      filteredStocks = filteredStocks.filter(stock => 
+        stock.sector.toLowerCase().includes(criteria.sector.toLowerCase())
+      );
+    }
+    
+    if (criteria.minPrice) {
+      filteredStocks = filteredStocks.filter(stock => {
+        // We'll filter by price after getting real data
+        return true;
+      });
+    }
+    
+    if (criteria.maxPrice) {
+      filteredStocks = filteredStocks.filter(stock => {
+        // We'll filter by price after getting real data
+        return true;
+      });
+    }
+    
+    // Limit to 30 stocks for performance
+    const stocksToProcess = filteredStocks.slice(0, 30);
+    
+    // Get real-time price data for each stock
+    const stocksWithPrices = await Promise.all(
+      stocksToProcess.map(async (stock) => {
+        try {
+          const priceData = await getStockPrice(stock.symbol);
+          
+          if (priceData && priceData.price && parseFloat(priceData.price) > 0) {
+            const price = parseFloat(priceData.price);
+            const change = parseFloat(priceData.change) || 0;
+            const changePercent = parseFloat(priceData.change_percent) || 0;
+            const volume = parseFloat(priceData.volume) || 0;
+            
+            const stockData = {
+              symbol: stock.symbol,
+              name: stock.name,
+              price: price,
+              change: change,
+              change_percent: changePercent,
+              volume: volume,
+              market_cap: 0, // Not available from basic price API
+              sector: stock.sector,
+              industry: stock.industry,
+              rsi: 0, // Would need separate API call for real RSI
+              pe_ratio: 0 // Would need separate API call for real P/E
+            };
+            
+            // Apply price filters if specified
+            if (criteria.minPrice && price < criteria.minPrice) return null;
+            if (criteria.maxPrice && price > criteria.maxPrice) return null;
+            
+            return stockData;
+          }
+        } catch (error) {
+          console.log(`Failed to get price for ${stock.symbol}:`, error.message);
+        }
+        return null;
+      })
+    );
+    
+    // Filter out null results and sort by price (descending)
+    const validStocks = stocksWithPrices
+      .filter(stock => stock !== null)
+      .sort((a, b) => b.price - a.price);
+    
+    return { data: validStocks };
+  } catch (error) {
+    console.error("Screener API failed:", error.message);
+    return { data: [], error: "Failed to fetch screener data" };
   }
 }
 

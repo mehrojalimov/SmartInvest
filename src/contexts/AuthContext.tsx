@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -67,16 +67,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
-        return true;
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error || 'Login failed' };
       }
-      return false;
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return { success: false, error: 'Network error occurred' };
     }
   };
 
-  const register = async (username: string, password: string): Promise<boolean> => {
+  const register = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch('/api/create', {
         method: 'POST',
@@ -90,12 +92,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
-        return true;
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error || 'Registration failed' };
       }
-      return false;
     } catch (error) {
       console.error('Registration error:', error);
-      return false;
+      return { success: false, error: 'Network error occurred' };
     }
   };
 

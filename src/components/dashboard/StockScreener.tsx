@@ -9,6 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 interface ScreenerCriteria {
+  minPrice?: string;
+  maxPrice?: string;
   min_volume?: string;
   max_volume?: string;
   min_market_cap?: string;
@@ -92,6 +94,26 @@ export const StockScreener = () => {
         <div className="space-y-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="min-price">Min Price ($)</Label>
+              <Input
+                id="min-price"
+                type="number"
+                placeholder="e.g., 10"
+                value={criteria.minPrice || ''}
+                onChange={(e) => handleCriteriaChange('minPrice', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="max-price">Max Price ($)</Label>
+              <Input
+                id="max-price"
+                type="number"
+                placeholder="e.g., 500"
+                value={criteria.maxPrice || ''}
+                onChange={(e) => handleCriteriaChange('maxPrice', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="min-volume">Min Volume (M)</Label>
               <Input
                 id="min-volume"
@@ -109,26 +131,6 @@ export const StockScreener = () => {
                 placeholder="e.g., 100"
                 value={criteria.max_volume || ''}
                 onChange={(e) => handleCriteriaChange('max_volume', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="min-market-cap">Min Market Cap (B)</Label>
-              <Input
-                id="min-market-cap"
-                type="number"
-                placeholder="e.g., 1"
-                value={criteria.min_market_cap || ''}
-                onChange={(e) => handleCriteriaChange('min_market_cap', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="max-market-cap">Max Market Cap (B)</Label>
-              <Input
-                id="max-market-cap"
-                type="number"
-                placeholder="e.g., 1000"
-                value={criteria.max_market_cap || ''}
-                onChange={(e) => handleCriteriaChange('max_market_cap', e.target.value)}
               />
             </div>
           </div>
@@ -200,7 +202,16 @@ export const StockScreener = () => {
             
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {screenerData.data?.map((stock) => {
-                const isPositive = stock.change >= 0;
+                // Add safe defaults for all numeric values
+                const price = parseFloat(stock.price) || 0;
+                const change = parseFloat(stock.change) || 0;
+                const changePercent = parseFloat(stock.change_percent) || 0;
+                const volume = parseFloat(stock.volume) || 0;
+                const marketCap = parseFloat(stock.market_cap) || 0;
+                const rsi = parseFloat(stock.rsi) || 0;
+                const peRatio = parseFloat(stock.pe_ratio) || 0;
+                
+                const isPositive = change >= 0;
                 const TrendIcon = isPositive ? TrendingUp : TrendingDown;
                 
                 return (
@@ -211,28 +222,28 @@ export const StockScreener = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-semibold text-foreground">{stock.symbol}</p>
-                        <p className="text-sm text-muted-foreground">{stock.name}</p>
+                        <p className="text-sm text-muted-foreground">{stock.name || 'Unknown Company'}</p>
                         <Badge variant="outline" className="text-xs">
-                          {stock.sector}
+                          {stock.sector || 'Unknown'}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Vol: {(stock.volume / 1000000).toFixed(1)}M</span>
-                        <span>Cap: ${(stock.market_cap / 1000000000).toFixed(1)}B</span>
-                        {stock.rsi && <span>RSI: {stock.rsi.toFixed(1)}</span>}
-                        {stock.pe_ratio && <span>P/E: {stock.pe_ratio.toFixed(1)}</span>}
+                        <span>Vol: {(volume / 1000000).toFixed(1)}M</span>
+                        {marketCap > 0 && <span>Cap: ${(marketCap / 1000000000).toFixed(1)}B</span>}
+                        {rsi > 0 && <span>RSI: {rsi.toFixed(1)}</span>}
+                        {peRatio > 0 && <span>P/E: {peRatio.toFixed(1)}</span>}
                       </div>
                     </div>
                     
                     <div className="text-right">
                       <p className="font-semibold text-foreground">
-                        ${stock.price.toFixed(2)}
+                        ${price.toFixed(2)}
                       </p>
                       <div className={`flex items-center gap-1 text-sm ${
                         isPositive ? "text-success" : "text-destructive"
                       }`}>
                         <TrendIcon className="w-3 h-3" />
-                        {isPositive ? '+' : ''}{stock.change.toFixed(2)} ({isPositive ? '+' : ''}{stock.change_percent.toFixed(2)}%)
+                        {isPositive ? '+' : ''}{change.toFixed(2)} ({isPositive ? '+' : ''}{changePercent.toFixed(2)}%)
                       </div>
                     </div>
                   </div>

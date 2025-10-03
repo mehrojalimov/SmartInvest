@@ -26,11 +26,11 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const success = isLogin 
+      const result = isLogin 
         ? await login(formData.username, formData.password)
         : await register(formData.username, formData.password);
 
-      if (success) {
+      if (result.success) {
         toast({
           title: "Success!",
           description: isLogin ? "Login successful!" : "Account created successfully!",
@@ -39,7 +39,7 @@ const Login = () => {
       } else {
         toast({
           title: "Error",
-          description: isLogin ? "Invalid username or password" : "Username already exists or invalid format",
+          description: result.error || (isLogin ? "Invalid username or password" : "Registration failed"),
           variant: "destructive",
         });
       }
