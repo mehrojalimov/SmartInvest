@@ -284,19 +284,68 @@ class DatabaseService {
 
   // Get cost basis (total amount invested) for each stock
   getCostBasis(userId) {
-    return this.db.prepare(`
+    // Get all transactions for the user, ordered by date
+    const transactions = this.db.prepare(`
       SELECT 
         s.stock_name,
-        SUM(CASE 
-          WHEN t.transaction_type = 'BUY' THEN t.quantity * t.price
-          WHEN t.transaction_type = 'SELL' THEN -t.quantity * t.price
-        END) as cost_basis
+        t.transaction_type,
+        t.quantity,
+        t.price,
+        t.transaction_date
       FROM transactions t
       JOIN stocks s ON t.stock_id = s.stock_id
       WHERE t.user_id = ?
-      GROUP BY s.stock_name
-      HAVING cost_basis > 0
+      ORDER BY s.stock_name, t.transaction_date
     `).all(userId);
+
+    // Calculate cost basis using FIFO method
+    const stockCostBasis = {};
+    
+    for (const transaction of transactions) {
+      const { stock_name, transaction_type, quantity, price } = transaction;
+      
+      if (!stockCostBasis[stock_name]) {
+        stockCostBasis[stock_name] = { totalQuantity: 0, totalCost: 0, fifoQueue: [] };
+      }
+      
+      if (transaction_type === 'BUY') {
+        // Add to FIFO queue
+        stockCostBasis[stock_name].fifoQueue.push({ quantity, price });
+        stockCostBasis[stock_name].totalQuantity += quantity;
+        stockCostBasis[stock_name].totalCost += quantity * price;
+      } else if (transaction_type === 'SELL') {
+        let remainingToSell = quantity;
+        
+        // Process FIFO queue
+        while (remainingToSell > 0 && stockCostBasis[stock_name].fifoQueue.length > 0) {
+          const oldestBatch = stockCostBasis[stock_name].fifoQueue[0];
+          
+          if (oldestBatch.quantity <= remainingToSell) {
+            // Use entire batch
+            const costToRemove = oldestBatch.quantity * oldestBatch.price;
+            stockCostBasis[stock_name].totalCost -= costToRemove;
+            stockCostBasis[stock_name].totalQuantity -= oldestBatch.quantity;
+            remainingToSell -= oldestBatch.quantity;
+            stockCostBasis[stock_name].fifoQueue.shift();
+          } else {
+            // Use partial batch
+            const costToRemove = remainingToSell * oldestBatch.price;
+            stockCostBasis[stock_name].totalCost -= costToRemove;
+            stockCostBasis[stock_name].totalQuantity -= remainingToSell;
+            oldestBatch.quantity -= remainingToSell;
+            remainingToSell = 0;
+          }
+        }
+      }
+    }
+    
+    // Convert to array format
+    return Object.entries(stockCostBasis)
+      .filter(([_, data]) => data.totalQuantity > 0)
+      .map(([stock_name, data]) => ({
+        stock_name,
+        cost_basis: data.totalCost
+      }));
   }
 
   close() {
