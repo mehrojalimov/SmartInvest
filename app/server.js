@@ -44,6 +44,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Simple test endpoint
+app.get('/test', (req, res) => {
+  res.status(200).json({ message: 'Server is running', port: port, host: host });
+});
+
 /***************************************************************************************************************
                                         Set up token and cookies
 ****************************************************************************************************************/
@@ -783,18 +788,22 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-app.listen(port, host, () => {
-  console.log(`🚀 SmartInvest Server running on http://${host}:${port}`);
-  console.log(`📊 Database: SQLite (database.sqlite)`);
-  console.log(`🔑 Demo user: username="demo", password="password123"`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-  console.log(`📁 Working directory: ${process.cwd()}`);
-  console.log(`📁 Dist directory exists: ${require('fs').existsSync(path.join(__dirname, '../dist'))}`);
+const server = app.listen(port, host, () => {
+  console.log(`SmartInvest Server running on http://${host}:${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  console.log(`Working directory: ${process.cwd()}`);
+  console.log(`Dist directory exists: ${require('fs').existsSync(path.join(__dirname, '../dist'))}`);
+  console.log('Server started successfully');
+});
+
+server.on('error', (err) => {
+  console.error('Server error:', err);
+  process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down server...');
+  console.log('Shutting down server...');
   db.close();
   process.exit(0);
 });
