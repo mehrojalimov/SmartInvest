@@ -11,21 +11,30 @@ let app = express();
 let host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
 let port = process.env.PORT || 10000;
 
-// CORS middleware (only in development)
-if (process.env.NODE_ENV !== "production") {
-  app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-    } else {
-      next();
-    }
-  });
-}
+// CORS middleware
+app.use((req, res, next) => {
+  // Allow requests from the same origin in production
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://smartinvest-4qwx.onrender.com',
+    'https://smartinvest.onrender.com'
+  ];
+  
+  if (process.env.NODE_ENV !== "production" || allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // Serve static files from dist directory in production
 if (process.env.NODE_ENV === "production") {
@@ -215,16 +224,20 @@ app.get('/api/portfolio/history', authorize, async (req, res) => {
 
 // User authentication endpoints
 app.post("/api/create", async (req, res) => {
+  console.log("Registration request received:", { username: req.body.username });
+  
   const { username, password } = req.body;
 
   // Validate registration with detailed error messages
   const validation = validateRegistration(req.body);
   if (!validation.valid) {
+    console.log("Validation failed:", validation.error);
     return res.status(400).json({ error: validation.error });
   }
 
   try {
     const user = await db.createUser(username, password);
+    console.log("User created successfully:", user);
     
     // Auto login
     let token = makeToken();
@@ -784,8 +797,25 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Server error:', err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Ensure all responses are JSON for API routes
+app.use('/api/*', (req, res, next) => {
+  const originalSend = res.send;
+  res.send = function(data) {
+    if (typeof data === 'string') {
+      try {
+        JSON.parse(data);
+        return originalSend.call(this, data);
+      } catch (e) {
+        return originalSend.call(this, JSON.stringify({ error: data }));
+      }
+    }
+    return originalSend.call(this, data);
+  };
+  next();
 });
 
 // Serve React app for client-side routing (production only)
