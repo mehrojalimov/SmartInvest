@@ -718,19 +718,21 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
       }
     });
     
-    // Calculate portfolio value (excluding cash)
-    const portfolioValue = totalValue - cashBalance;
-    const unrealizedPnL = portfolioValue - totalCost;
+    // Calculate portfolio value as: Invested Amount + Performance
+    const currentMarketValue = totalValue - cashBalance; // Current market value of stocks
+    const performance = currentMarketValue - totalCost; // Gain/loss on investments
+    const portfolioValue = totalCost + performance; // Invested + Performance
+    const unrealizedPnL = performance; // Same as performance
     const totalReturn = totalCost > 0 ? (unrealizedPnL / totalCost) * 100 : 0;
     const maxAllocation = Object.keys(assetAllocation).length > 0 ? 
       Math.max(...Object.values(assetAllocation).map(a => a.allocation)) : 0;
     
     console.log(`\n📊 PORTFOLIO ANALYTICS RESULTS:`);
-    console.log(`   Total Value: $${totalValue.toFixed(2)} (Cash + Portfolio)`);
-    console.log(`   Portfolio Value: $${portfolioValue.toFixed(2)} (Invested stocks only)`);
+    console.log(`   Total Account Value: $${totalValue.toFixed(2)} (Cash + Portfolio)`);
     console.log(`   Cash Balance: $${cashBalance.toFixed(2)}`);
+    console.log(`   Portfolio Value: $${portfolioValue.toFixed(2)} (Invested + Performance)`);
     console.log(`   Total Invested: $${totalCost.toFixed(2)} (Cost basis)`);
-    console.log(`   Unrealized P&L: $${unrealizedPnL.toFixed(2)} (Portfolio - Invested)`);
+    console.log(`   Performance: $${performance.toFixed(2)} (Gain/Loss on investments)`);
     console.log(`   Total Return: ${totalReturn.toFixed(2)}%`);
     console.log(`   Portfolio Diversification: ${Object.keys(assetAllocation).length} stocks`);
     console.log(`   Max Allocation: ${maxAllocation.toFixed(2)}%`);

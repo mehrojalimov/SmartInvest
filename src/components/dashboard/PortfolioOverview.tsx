@@ -99,8 +99,8 @@ export const PortfolioOverview = () => {
   const totalAssets = portfolio.length;
   const totalTransactions = transactions.length;
 
-  // Calculate portfolio value using REAL API prices with fallback to cache
-  const portfolioValue = useMemo(() => {
+  // Calculate current market value of stocks
+  const currentMarketValue = useMemo(() => {
     return portfolio.reduce((total: number, asset: any) => {
       const stockData = marketData?.[asset.stock_name];
       const cachedData = cachedPrices[asset.stock_name];
@@ -113,7 +113,7 @@ export const PortfolioOverview = () => {
     }, 0);
   }, [portfolio, marketData, cachedPrices]);
 
-  const totalValue = portfolioValue + cashBalance;
+  const totalValue = currentMarketValue + cashBalance;
 
   // Calculate total invested value (cost basis)
   const totalInvestedValue = useMemo(() => {
@@ -127,6 +127,10 @@ export const PortfolioOverview = () => {
     
     return invested;
   }, [costBasis]);
+
+  // Calculate portfolio value as: Invested Amount + Performance
+  const performance = currentMarketValue - totalInvestedValue;
+  const portfolioValue = totalInvestedValue + performance;
   
   // Calculate real change based on actual market data with fallback to cache
   const realChange = useMemo(() => {
@@ -172,12 +176,20 @@ export const PortfolioOverview = () => {
 
   const stats = [
     {
-      title: "Total Portfolio Value",
+      title: "Total Account Value",
       value: `$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: `${todayChangePercent >= 0 ? '+' : ''}${todayChangePercent.toFixed(2)}%`,
       isPositive: todayChangePercent >= 0,
       icon: DollarSign,
       gradient: "bg-gradient-primary",
+    },
+    {
+      title: "Portfolio Value",
+      value: `$${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: `${performance >= 0 ? '+' : ''}${(performance / totalInvestedValue * 100).toFixed(2)}%`,
+      isPositive: performance >= 0,
+      icon: TrendingUp,
+      gradient: "bg-gradient-secondary",
     },
     {
       title: "Cash Balance",
