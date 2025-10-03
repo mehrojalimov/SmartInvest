@@ -92,11 +92,12 @@ function makeToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// Cookie options
+// Cookie options - Secure for production
 let cookieOptions = {
   httpOnly: true,
-  secure: false, // Set to false for localhost development
-  sameSite: "lax", // Changed from "strict" to "lax" for better compatibility
+  secure: process.env.NODE_ENV === "production", // Secure in production
+  sameSite: "lax",
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
 };
 
 /******************************************************************************************************************
@@ -259,7 +260,10 @@ app.post("/api/login", async (req, res) => {
     // Generate and store login token
     let token = makeToken();
     tokenStorage[token] = username;
-    console.log("User logged in with token:", token);
+    // Don't log tokens in production
+    if (process.env.NODE_ENV !== "production") {
+      console.log("User logged in with token:", token);
+    }
 
     return res.cookie("token", token, cookieOptions).status(200).json({ 
       message: "Login successful",

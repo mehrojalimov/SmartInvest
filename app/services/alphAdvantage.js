@@ -1,14 +1,14 @@
 const axios = require("axios");
 
-// 12 Data API Configuration (Backup)
-const TWELVE_DATA_KEY = "3769efaa98a441b8b322114cc23f49d9";
+// API Configuration - Use environment variables for security
+const TWELVE_DATA_KEY = process.env.TWELVE_DATA_KEY || "demo";
 const TWELVE_DATA_BASE_URL = "https://api.twelvedata.com";
 
-// Alpha Vantage API Configuration (Backup)
-const ALPHA_VANTAGE_KEY = "demo";
+// Alpha Vantage API Configuration
+const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_KEY || "demo";
 
-// IEX Cloud API Configuration (Backup)
-const IEX_CLOUD_KEY = "pk_test_123456789";
+// IEX Cloud API Configuration
+const IEX_CLOUD_KEY = process.env.IEX_CLOUD_KEY || "demo";
 
 // No mock data - all data must come from real APIs
 
