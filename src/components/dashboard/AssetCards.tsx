@@ -2,12 +2,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { StockDetailsModal } from "./StockDetailsModal";
 
 export const AssetCards = () => {
   const { data: portfolioData, isLoading, error } = usePortfolio();
-  const [cachedPrices, setCachedPrices] = useState<{[key: string]: any}>({});
+  const [selectedStock, setSelectedStock] = useState<{
+    symbol: string;
+    quantity: number;
+    costBasis: number;
+  } | null>(null);
 
   // Fetch transaction history for fallback prices
   const { data: transactionsData } = useQuery({
@@ -33,48 +38,42 @@ export const AssetCards = () => {
     },
   });
 
-  // Load cached prices from localStorage on component mount
-  useEffect(() => {
-    const savedPrices = localStorage.getItem('cachedStockPrices');
-    if (savedPrices) {
-      try {
-        setCachedPrices(JSON.parse(savedPrices));
-      } catch (e) {
-        console.error('Failed to parse cached prices:', e);
-      }
-    }
-  }, []);
+  const portfolio = portfolioData?.portfolio || [];
 
-  // Fetch real-time market data
-  const { data: marketData } = useQuery({
-    queryKey: ['market-realtime'],
+  // Fetch individual stock prices for portfolio holdings
+  const { data: portfolioStockPrices } = useQuery({
+    queryKey: ['asset-cards-stock-prices', portfolio.map((p: any) => p.stock_name).join(',')],
     queryFn: async () => {
-      const response = await fetch('/api/market/realtime');
-      if (!response.ok) throw new Error('Failed to fetch market data');
-      return response.json();
+      if (portfolio.length === 0) return {};
+      
+      const prices: {[key: string]: {price: number, change?: number, change_percent?: number}} = {};
+      await Promise.all(
+        portfolio.map(async (asset: any) => {
+          try {
+            const response = await fetch(`/api/stock/${asset.stock_name}`);
+            if (response.ok) {
+              const data = await response.json();
+              prices[asset.stock_name] = {
+                price: parseFloat(data.price),
+                // Note: /api/stock doesn't return change data, would need enhancement
+              };
+            }
+          } catch (error) {
+            console.error(`Failed to fetch price for ${asset.stock_name}:`, error);
+          }
+        })
+      );
+      return prices;
     },
-    refetchInterval: 300000, // Update every 5 minutes (300000ms) for real prices
-    onSuccess: (data) => {
-      // Update cache with fresh data
-      if (data) {
-        setCachedPrices(prev => {
-          const newCache = { ...prev, ...data };
-          localStorage.setItem('cachedStockPrices', JSON.stringify(newCache));
-          return newCache;
-        });
-      }
-    }
+    enabled: portfolio.length > 0,
+    refetchInterval: 300000, // Update every 5 minutes
   });
 
   const assetsWithValues = useMemo(() => {
     if (!portfolioData?.portfolio) return [];
     
     return portfolioData.portfolio.map((asset: any) => {
-      // Get real-time price and change data from market data
-      const stockData = marketData?.[asset.stock_name];
-      const cachedData = cachedPrices[asset.stock_name];
-      
-      // Get last transaction price as final fallback
+      // Get last transaction price as fallback
       const lastTransaction = transactionsData?.transactions?.find(
         (t: any) => t.stock_name === asset.stock_name
       );
@@ -85,21 +84,14 @@ export const AssetCards = () => {
         (cb: any) => cb.stock_name === asset.stock_name
       )?.cost_basis || 0;
       
-      // Use fresh data if available, otherwise fall back to cached data, then transaction price
-      const currentPrice = stockData?.price ? parseFloat(stockData.price) : 
-                          (cachedData?.price ? parseFloat(cachedData.price) : transactionPrice);
-      
-      // For change calculation, only use real-time or cached data (not transaction data)
-      // Transaction data doesn't have meaningful change information
-      const change = stockData?.change ? parseFloat(stockData.change) : 
-                    (cachedData?.change ? parseFloat(cachedData.change) : 0);
-      const changePercent = stockData?.change_percent ? parseFloat(stockData.change_percent) : 
-                           (cachedData?.change_percent ? parseFloat(cachedData.change_percent) : 0);
+      // Use fetched price or fall back to transaction price
+      const stockPriceData = portfolioStockPrices?.[asset.stock_name];
+      const currentPrice = stockPriceData?.price || transactionPrice;
+      const changePercent = stockPriceData?.change_percent || 0;
       
       // Determine data source for proper labeling
-      const isRealTimeData = !!stockData?.price;
-      const isCachedData = !isRealTimeData && !!cachedData?.price;
-      const isTransactionData = !isRealTimeData && !isCachedData && transactionPrice > 0;
+      const isRealTimeData = !!stockPriceData?.price;
+      const isTransactionData = !isRealTimeData && transactionPrice > 0;
       
       // Calculate total value and profit/loss
       const totalValue = asset.total_quantity * currentPrice;
@@ -116,11 +108,10 @@ export const AssetCards = () => {
         profitLossPercent,
         isPriceAvailable: currentPrice > 0,
         isRealTimeData,
-        isCachedData,
         isTransactionData
       };
     }).sort((a, b) => b.totalValue - a.totalValue);
-  }, [portfolioData?.portfolio, marketData, cachedPrices, transactionsData, costBasisData]);
+  }, [portfolioData?.portfolio, portfolioStockPrices, transactionsData, costBasisData]);
 
   if (isLoading) {
     return (
@@ -173,7 +164,12 @@ export const AssetCards = () => {
             return (
               <div
                 key={index}
-                className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+                onClick={() => setSelectedStock({
+                  symbol: asset.stock_name,
+                  quantity: asset.total_quantity,
+                  costBasis: asset.costBasis
+                })}
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -245,6 +241,17 @@ export const AssetCards = () => {
           })
         )}
       </CardContent>
+
+      {/* Stock Details Modal */}
+      {selectedStock && (
+        <StockDetailsModal
+          open={!!selectedStock}
+          onClose={() => setSelectedStock(null)}
+          symbol={selectedStock.symbol}
+          quantity={selectedStock.quantity}
+          costBasis={selectedStock.costBasis}
+        />
+      )}
     </Card>
   );
 };

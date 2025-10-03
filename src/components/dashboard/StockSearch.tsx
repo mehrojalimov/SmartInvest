@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { useStockData, useAddTransaction } from "@/hooks/usePortfolio";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,7 +95,18 @@ export const StockSearch = () => {
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-secondary/50">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-lg">{stockData.symbol}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">{stockData.symbol}</h3>
+                  <a
+                    href={`https://finance.yahoo.com/quote/${stockData.symbol}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-primary/80 transition-colors"
+                    title="View on Yahoo Finance"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
                 <div className="text-right">
                   <Badge variant={isPositive ? "success" : "destructive"}>
                     {isPositive ? (

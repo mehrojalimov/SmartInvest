@@ -698,16 +698,8 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
         };
       } catch (error) {
         console.error(`Error calculating metrics for ${holding.stock_name}:`, error);
-        // Use mock data as fallback
-        const mockPrice = 100; // Default mock price
-        const marketValue = holding.total_quantity * mockPrice;
-        totalValue += marketValue;
-        assetAllocation[holding.stock_name] = {
-          quantity: holding.total_quantity,
-          currentPrice: mockPrice,
-          marketValue: marketValue,
-          allocation: 0
-        };
+        // Skip this holding if we can't get the price - don't use mock data
+        console.warn(`Skipping ${holding.stock_name} in analytics due to price fetch error`);
       }
     }
     
