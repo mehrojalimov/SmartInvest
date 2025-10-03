@@ -65,6 +65,21 @@ export const PerformanceChart = () => {
     const baseValue = 10000; // Starting with $10,000
     const currentValue = currentTotalValue;
     
+    // If no portfolio value yet, show flat line at starting value
+    if (currentPortfolioValue === 0) {
+      for (let i = months; i >= 0; i--) {
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const currentMonth = new Date().getMonth();
+        const monthIndex = (currentMonth - i + 12) % 12;
+        
+        data.push({
+          month: monthNames[monthIndex],
+          value: cashBalance // Show only cash balance if no investments
+        });
+      }
+      return data;
+    }
+    
     for (let i = months; i >= 0; i--) {
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const currentMonth = new Date().getMonth();

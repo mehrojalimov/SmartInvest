@@ -174,6 +174,11 @@ export const PortfolioOverview = () => {
     console.log('  Total Transactions:', totalTransactions);
   }, [portfolioValue, cashBalance, totalValue, totalInvestedValue, totalAssets, totalTransactions]);
 
+  // Calculate performance percentage with proper zero handling
+  const performancePercent = totalInvestedValue > 0 
+    ? (performance / totalInvestedValue * 100) 
+    : 0;
+
   const stats = [
     {
       title: "Total Account Value",
@@ -186,8 +191,8 @@ export const PortfolioOverview = () => {
     {
       title: "Portfolio Value",
       value: `$${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      change: `${performance >= 0 ? '+' : ''}${(performance / totalInvestedValue * 100).toFixed(2)}%`,
-      isPositive: performance >= 0,
+      change: `${performancePercent >= 0 ? '+' : ''}${performancePercent.toFixed(2)}%`,
+      isPositive: performancePercent >= 0,
       icon: TrendingUp,
       gradient: "bg-gradient-secondary",
     },
