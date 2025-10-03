@@ -136,7 +136,7 @@ export default function About() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => window.location.href = 'mailto:alimovmekhroj01@gmail.com'}
+                onClick={() => window.location.href = 'mailto:alimovmehroj01@gmail.com'}
               >
                 <Mail className="w-4 h-4 mr-2" />
                 Email
