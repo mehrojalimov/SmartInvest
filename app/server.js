@@ -1,30 +1,38 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
+const path = require("path");
 const DatabaseService = require("./services/database");
 const { getStockPrice, getRealTimeMarketData, getTechnicalIndicators, getStockScreener } = require("./services/alphAdvantage");
 
 // Set up paths relative to project root
 
 let app = express();
-let host = "localhost";
-let port = 3001;
+let host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+let port = process.env.PORT || 3001;
 
-// CORS middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// CORS middleware (only in development)
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+}
 
-app.use(express.static("public"));
+// Serve static files from dist directory in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../dist")));
+} else {
+  app.use(express.static("public"));
+}
 app.use(express.json());
 app.use(cookieParser());
 
@@ -758,10 +766,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+// Serve React app for client-side routing (production only)
+if (process.env.NODE_ENV === "production") {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
+} else {
+  // 404 handler for development
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
+}
 
 app.listen(port, host, () => {
   console.log(`🚀 SmartInvest Server running on http://${host}:${port}`);
