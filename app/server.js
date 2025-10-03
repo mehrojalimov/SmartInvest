@@ -39,6 +39,11 @@ app.use(cookieParser());
 // Initialize database
 const db = new DatabaseService();
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 /***************************************************************************************************************
                                         Set up token and cookies
 ****************************************************************************************************************/
@@ -782,6 +787,9 @@ app.listen(port, host, () => {
   console.log(`🚀 SmartInvest Server running on http://${host}:${port}`);
   console.log(`📊 Database: SQLite (database.sqlite)`);
   console.log(`🔑 Demo user: username="demo", password="password123"`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  console.log(`📁 Working directory: ${process.cwd()}`);
+  console.log(`📁 Dist directory exists: ${require('fs').existsSync(path.join(__dirname, '../dist'))}`);
 });
 
 // Graceful shutdown
