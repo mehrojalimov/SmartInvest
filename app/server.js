@@ -675,9 +675,11 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
     console.log(`   Cash Balance: $${cashBalance.toFixed(2)}`);
     console.log(`   Cost Basis Entries: ${costBasis.length}`);
     
-    // Simplified analytics calculation
+    // Calculate total invested value using proper cost basis
+    const totalCost = costBasis.reduce((sum, cb) => sum + cb.cost_basis, 0);
+    
+    // Calculate portfolio value and asset allocation
     let totalValue = cashBalance;
-    let totalCost = 0;
     const assetAllocation = {};
     
     // Calculate basic portfolio metrics
@@ -694,16 +696,6 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
           marketValue: marketValue,
           allocation: 0
         };
-        
-        // Simple cost calculation from transactions
-        const stockTransactions = transactions.filter(t => t.stock_name === holding.stock_name);
-        let costBasis = 0;
-        for (const tx of stockTransactions) {
-          if (tx.transaction_type === 'BUY') {
-            costBasis += tx.quantity * tx.price;
-          }
-        }
-        totalCost += costBasis;
       } catch (error) {
         console.error(`Error calculating metrics for ${holding.stock_name}:`, error);
         // Use mock data as fallback
@@ -726,16 +718,19 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
       }
     });
     
-    const unrealizedPnL = totalValue - totalCost - cashBalance;
+    // Calculate portfolio value (excluding cash)
+    const portfolioValue = totalValue - cashBalance;
+    const unrealizedPnL = portfolioValue - totalCost;
     const totalReturn = totalCost > 0 ? (unrealizedPnL / totalCost) * 100 : 0;
     const maxAllocation = Object.keys(assetAllocation).length > 0 ? 
       Math.max(...Object.values(assetAllocation).map(a => a.allocation)) : 0;
     
     console.log(`\n📊 PORTFOLIO ANALYTICS RESULTS:`);
-    console.log(`   Total Value: $${totalValue.toFixed(2)}`);
-    console.log(`   Total Cost: $${totalCost.toFixed(2)}`);
+    console.log(`   Total Value: $${totalValue.toFixed(2)} (Cash + Portfolio)`);
+    console.log(`   Portfolio Value: $${portfolioValue.toFixed(2)} (Invested stocks only)`);
     console.log(`   Cash Balance: $${cashBalance.toFixed(2)}`);
-    console.log(`   Unrealized P&L: $${unrealizedPnL.toFixed(2)}`);
+    console.log(`   Total Invested: $${totalCost.toFixed(2)} (Cost basis)`);
+    console.log(`   Unrealized P&L: $${unrealizedPnL.toFixed(2)} (Portfolio - Invested)`);
     console.log(`   Total Return: ${totalReturn.toFixed(2)}%`);
     console.log(`   Portfolio Diversification: ${Object.keys(assetAllocation).length} stocks`);
     console.log(`   Max Allocation: ${maxAllocation.toFixed(2)}%`);
@@ -743,6 +738,7 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
     
     res.json({
       totalValue: totalValue,
+      portfolioValue: portfolioValue,
       totalCost: totalCost,
       cashBalance: cashBalance,
       realizedPnL: 0, // Simplified for now
