@@ -16,27 +16,26 @@ export const AssetCards = () => {
       if (!response.ok) throw new Error('Failed to fetch market data');
       return response.json();
     },
-    refetchInterval: 5000, // Update every 5 seconds
+    refetchInterval: 300000, // Update every 5 minutes (300000ms) for real prices
   });
 
   const assetsWithValues = useMemo(() => {
     if (!portfolioData?.portfolio) return [];
     
     return portfolioData.portfolio.map((asset: any) => {
-      // Get real-time price from market data
-      const stockPrice = marketData?.[asset.stock_name]?.price;
-      const currentPrice = stockPrice ? parseFloat(stockPrice) : 0;
+      // Get real-time price and change data from market data
+      const stockData = marketData?.[asset.stock_name];
+      const currentPrice = stockData?.price ? parseFloat(stockData.price) : 0;
+      const change = stockData?.change ? parseFloat(stockData.change) : 0;
+      const changePercent = stockData?.change_percent ? parseFloat(stockData.change_percent) : 0;
       
       // Calculate total value
       const totalValue = asset.total_quantity * currentPrice;
       
-      // Generate small random change for demo (since real-time API doesn't provide change data)
-      const change = (Math.random() - 0.5) * 2;
-      
       return {
         ...asset,
         currentPrice,
-        change,
+        change: changePercent, // Use real change percentage from API
         totalValue
       };
     }).sort((a, b) => b.totalValue - a.totalValue);

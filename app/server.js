@@ -349,40 +349,107 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Cache for market data to reduce API calls
+let marketDataCache = {};
+let lastCacheUpdate = 0;
+const CACHE_DURATION = 300000; // 5 minutes cache for real prices
+
+// Clear cache function for testing
+function clearMarketDataCache() {
+  marketDataCache = {};
+  lastCacheUpdate = 0;
+}
+
 // Real-time market data endpoint
 app.get("/api/market/realtime", async (req, res) => {
   try {
     const symbols = req.query.symbols ? req.query.symbols.split(',') : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'];
+    const now = Date.now();
+    
+    // Return cached data if it's still fresh
+    if (marketDataCache[symbols.join(',')] && (now - lastCacheUpdate) < CACHE_DURATION) {
+      return res.json(marketDataCache[symbols.join(',')]);
+    }
+    
     const marketData = await getRealTimeMarketData(symbols);
     
     // Check if the response contains an error (API rate limit, etc.)
     if (!marketData || marketData.code || marketData.message) {
       console.log("API returned error, using mock data");
-      // Return mock data when API fails
+      // Return mock data when API fails - use realistic stock prices
+      const realisticPrices = {
+        'AAPL': { base: 177.30, range: 0.02 },
+        'MSFT': { base: 383.75, range: 0.02 },
+        'GOOGL': { base: 144.35, range: 0.02 },
+        'AMZN': { base: 157.25, range: 0.02 },
+        'TSLA': { base: 249.50, range: 0.03 },
+        'NVDA': { base: 429.75, range: 0.02 },
+        'META': { base: 485.20, range: 0.02 },
+        'NFLX': { base: 485.20, range: 0.02 },
+        'AMD': { base: 120.45, range: 0.03 },
+        'INTC': { base: 45.80, range: 0.02 },
+        'SPY': { base: 520.15, range: 0.01 },
+        'QQQ': { base: 450.30, range: 0.01 }
+      };
+      
       const mockData = {};
       symbols.forEach(symbol => {
+        const stockData = realisticPrices[symbol] || { base: 100, range: 0.02 };
+        const basePrice = stockData.base;
+        const changeAmount = (Math.random() - 0.5) * (basePrice * stockData.range);
+        const currentPrice = basePrice + changeAmount;
+        const changePercent = (changeAmount / basePrice) * 100;
+        
         mockData[symbol] = {
-          price: (Math.random() * 500 + 50).toFixed(2),
-          change: (Math.random() - 0.5) * 10,
-          change_percent: (Math.random() - 0.5) * 5
+          price: currentPrice.toFixed(2),
+          change: changeAmount.toFixed(2),
+          change_percent: changePercent.toFixed(2)
         };
       });
+      marketDataCache[symbols.join(',')] = mockData;
+      lastCacheUpdate = now;
       return res.json(mockData);
     }
     
+    // Cache the successful response
+    marketDataCache[symbols.join(',')] = marketData;
+    lastCacheUpdate = now;
     res.json(marketData);
   } catch (error) {
     console.error("Error fetching real-time market data:", error);
-    // Return mock data on error
+    // Return mock data on error - use realistic stock prices
     const symbols = req.query.symbols ? req.query.symbols.split(',') : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'];
+    const realisticPrices = {
+      'AAPL': { base: 177.30, range: 0.02 },
+      'MSFT': { base: 383.75, range: 0.02 },
+      'GOOGL': { base: 144.35, range: 0.02 },
+      'AMZN': { base: 157.25, range: 0.02 },
+      'TSLA': { base: 249.50, range: 0.03 },
+      'NVDA': { base: 429.75, range: 0.02 },
+      'META': { base: 485.20, range: 0.02 },
+      'NFLX': { base: 485.20, range: 0.02 },
+      'AMD': { base: 120.45, range: 0.03 },
+      'INTC': { base: 45.80, range: 0.02 },
+      'SPY': { base: 520.15, range: 0.01 },
+      'QQQ': { base: 450.30, range: 0.01 }
+    };
+    
     const mockData = {};
     symbols.forEach(symbol => {
+      const stockData = realisticPrices[symbol] || { base: 100, range: 0.02 };
+      const basePrice = stockData.base;
+      const changeAmount = (Math.random() - 0.5) * (basePrice * stockData.range);
+      const currentPrice = basePrice + changeAmount;
+      const changePercent = (changeAmount / basePrice) * 100;
+      
       mockData[symbol] = {
-        price: (Math.random() * 500 + 50).toFixed(2),
-        change: (Math.random() - 0.5) * 10,
-        change_percent: (Math.random() - 0.5) * 5
+        price: currentPrice.toFixed(2),
+        change: changeAmount.toFixed(2),
+        change_percent: changePercent.toFixed(2)
       };
     });
+    marketDataCache[symbols.join(',')] = mockData;
+    lastCacheUpdate = now;
     res.json(mockData);
   }
 });

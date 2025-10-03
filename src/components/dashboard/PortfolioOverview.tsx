@@ -44,37 +44,59 @@ export const PortfolioOverview = () => {
     },
   });
 
+  // Fetch real-time market data for accurate portfolio valuation
+  const { data: marketData } = useQuery({
+    queryKey: ['market-realtime-portfolio'],
+    queryFn: async () => {
+      const response = await fetch('/api/market/realtime');
+      if (!response.ok) throw new Error('Failed to fetch market data');
+      return response.json();
+    },
+    refetchInterval: 300000, // Update every 5 minutes for real prices
+  });
+
   const portfolio = portfolioData?.portfolio || [];
   const transactions = transactionsData?.transactions || [];
   const cashBalance = cashBalanceData?.cashBalance || 0;
   const totalAssets = portfolio.length;
   const totalTransactions = transactions.length;
 
-  // Calculate portfolio value using mock prices
-  const mockPrices: { [key: string]: number } = {
-    'AAPL': 177.30,
-    'MSFT': 383.75,
-    'TSLA': 249.50,
-    'AMZN': 157.25,
-    'GOOGL': 144.35,
-    'NVDA': 429.75,
-    'META': 323.45,
-    'NFLX': 488.75,
-    'AMD': 127.20,
-    'INTC': 43.25
-  };
-
+  // Calculate portfolio value using REAL API prices
   const portfolioValue = useMemo(() => {
     return portfolio.reduce((total: number, asset: any) => {
-      const price = mockPrices[asset.stock_name] || 0;
+      const stockData = marketData?.[asset.stock_name];
+      const price = stockData?.price ? parseFloat(stockData.price) : 0;
       return total + (asset.total_quantity * price);
     }, 0);
-  }, [portfolio]);
+  }, [portfolio, marketData]);
 
   const totalValue = portfolioValue + cashBalance;
-  const previousValue = totalValue * 0.98; // Simulate 2% gain
-  const todayChange = totalValue - previousValue;
-  const todayChangePercent = previousValue > 0 ? (todayChange / previousValue) * 100 : 0;
+  
+  // Calculate real change based on actual market data
+  const realChange = useMemo(() => {
+    if (!marketData || portfolio.length === 0) return { change: 0, changePercent: 0 };
+    
+    let totalChange = 0;
+    let totalPreviousValue = 0;
+    
+    portfolio.forEach((asset: any) => {
+      const stockData = marketData[asset.stock_name];
+      if (stockData?.price && stockData?.change) {
+        const currentPrice = parseFloat(stockData.price);
+        const change = parseFloat(stockData.change);
+        const previousPrice = currentPrice - change;
+        
+        totalChange += asset.total_quantity * change;
+        totalPreviousValue += asset.total_quantity * previousPrice;
+      }
+    });
+    
+    const changePercent = totalPreviousValue > 0 ? (totalChange / totalPreviousValue) * 100 : 0;
+    return { change: totalChange, changePercent };
+  }, [portfolio, marketData]);
+  
+  const todayChange = realChange.change;
+  const todayChangePercent = realChange.changePercent;
 
   const stats = [
     {

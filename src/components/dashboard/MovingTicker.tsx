@@ -18,6 +18,8 @@ export const MovingTicker = () => {
     changePercent: string;
     isPositive: boolean;
   }>>([]);
+  
+  const [basePrices, setBasePrices] = useState<Record<string, number>>({});
 
   const { data: marketData, isLoading } = useQuery({
     queryKey: ['market-ticker'],
@@ -28,8 +30,8 @@ export const MovingTicker = () => {
       }
       return response.json();
     },
-    refetchInterval: 3000, // Update every 3 seconds
-    refetchOnWindowFocus: true,
+    refetchInterval: 300000, // Update every 5 minutes (300000ms) for real prices
+    refetchOnWindowFocus: false, // Don't refetch on focus
   });
 
   useEffect(() => {
@@ -39,22 +41,39 @@ export const MovingTicker = () => {
         const change = parseFloat(data.change || '0');
         const changePercent = parseFloat(data.change_percent || '0');
         
-        // If no change data, generate random small changes for demo
-        const finalChange = isNaN(change) || change === 0 ? (Math.random() - 0.5) * 2 : change;
-        const finalChangePercent = isNaN(changePercent) || changePercent === 0 ? (Math.random() - 0.5) * 0.5 : changePercent;
-        const isPositive = finalChange >= 0;
+        // Use real API data if available
+        if (price > 0) {
+          return {
+            symbol,
+            price: price.toFixed(2),
+            change: change.toFixed(2),
+            changePercent: changePercent.toFixed(2),
+            isPositive: change >= 0
+          };
+        }
         
-        return {
-          symbol,
-          price: isNaN(price) ? '0.00' : price.toFixed(2),
-          change: finalChange.toFixed(2),
-          changePercent: finalChangePercent.toFixed(2),
-          isPositive
-        };
-      });
+        // Fallback to base price with small changes if API data is invalid
+        const basePrice = basePrices[symbol] || price;
+        if (basePrice > 0) {
+          const changeAmount = (Math.random() - 0.5) * (basePrice * 0.01); // Max 1% change
+          const currentPrice = basePrice + changeAmount;
+          const changePercent = (changeAmount / basePrice) * 100;
+          
+          return {
+            symbol,
+            price: currentPrice.toFixed(2),
+            change: changeAmount.toFixed(2),
+            changePercent: changePercent.toFixed(2),
+            isPositive: changeAmount >= 0
+          };
+        }
+        
+        return null;
+      }).filter(Boolean);
+      
       setTickerItems(items);
     }
-  }, [marketData]);
+  }, [marketData, basePrices]);
 
   if (isLoading) {
     return (

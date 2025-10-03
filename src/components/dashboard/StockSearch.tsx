@@ -41,8 +41,10 @@ export const StockSearch = () => {
     }
   };
 
-  // Use price vs a calculated previous price for change indication
-  const isPositive = stockData ? Math.random() > 0.5 : false; // Random for demo
+  // Calculate real change data from API
+  const changeAmount = stockData ? parseFloat(stockData.change || '0') : 0;
+  const changePercent = stockData ? parseFloat(stockData.change_percent || '0') : 0;
+  const isPositive = changeAmount >= 0;
 
   return (
     <Card className="border-border/50">
@@ -76,15 +78,20 @@ export const StockSearch = () => {
             <div className="p-4 rounded-lg bg-secondary/50">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-lg">{stockData.symbol}</h3>
-                <Badge variant={isPositive ? "success" : "destructive"}>
-                  {isPositive ? (
-                    <TrendingUp className="w-3 h-3 mr-1" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3 mr-1" />
-                  )}
-                  {isPositive ? "+" : ""}
-                  {(Math.random() * 5).toFixed(2)}%
-                </Badge>
+                <div className="text-right">
+                  <Badge variant={isPositive ? "success" : "destructive"}>
+                    {isPositive ? (
+                      <TrendingUp className="w-3 h-3 mr-1" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3 mr-1" />
+                    )}
+                    {isPositive ? "+" : ""}
+                    {changePercent.toFixed(2)}%
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isPositive ? "+" : ""}${changeAmount.toFixed(2)} today
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
