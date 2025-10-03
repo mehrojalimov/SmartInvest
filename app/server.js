@@ -11,20 +11,9 @@ let app = express();
 let host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
 let port = process.env.PORT || 10000;
 
-// CORS middleware
+// CORS middleware - simplified for production
 app.use((req, res, next) => {
-  // Allow requests from the same origin in production
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'https://smartinvest-4qwx.onrender.com',
-    'https://smartinvest.onrender.com'
-  ];
-  
-  if (process.env.NODE_ENV !== "production" || allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin || '*');
-  }
-  
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -53,7 +42,14 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Initialize database
-const db = new DatabaseService();
+let db;
+try {
+  db = new DatabaseService();
+  console.log('Database initialized successfully');
+} catch (error) {
+  console.error('Database initialization failed:', error);
+  process.exit(1);
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -63,6 +59,15 @@ app.get('/health', (req, res) => {
 // Simple test endpoint
 app.get('/test', (req, res) => {
   res.status(200).json({ message: 'Server is running', port: port, host: host });
+});
+
+// Basic API test endpoint
+app.get('/api/test', (req, res) => {
+  res.status(200).json({ 
+    message: 'API is working', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV 
+  });
 });
 
 /***************************************************************************************************************
