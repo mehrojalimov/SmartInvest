@@ -327,6 +327,22 @@ app.get("/api/portfolio", authorize, async (req, res) => {
   }
 });
 
+// Get cost basis (total amount invested) for each stock
+app.get("/api/portfolio/cost-basis", authorize, async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const costBasis = db.getCostBasis(userId);
+    console.log(`\n💰 COST BASIS DEBUG for User ${userId}:`);
+    console.log('  Cost Basis Data:', costBasis);
+    console.log('  Total Cost Basis:', costBasis.reduce((sum, item) => sum + item.cost_basis, 0));
+    res.status(200).json({ costBasis });
+  } catch (error) {
+    console.error("Error fetching cost basis:", error);
+    res.status(500).json({ error: "Failed to fetch cost basis" });
+  }
+});
+
 app.post("/api/portfolio/transaction", authorize, async (req, res) => {
   const { stock_name, transaction_type, quantity } = req.body;
   const userId = req.userId;
@@ -346,11 +362,91 @@ app.post("/api/portfolio/transaction", authorize, async (req, res) => {
 
   try {
     // Get current stock price
+    console.log(`\n🔄 PROCESSING ${transaction_type} TRANSACTION:`);
+    console.log(`   User ID: ${userId}`);
+    console.log(`   Stock: ${stock_name}`);
+    console.log(`   Quantity: ${quantity}`);
+    
     const stockData = await getStockPrice(stock_name);
     const stockPrice = parseFloat(stockData.price);
+    const tradeAmount = stockPrice * parseInt(quantity);
     
+    console.log(`   Stock Price: $${stockPrice.toFixed(2)}`);
+    console.log(`   Trade Amount: $${tradeAmount.toFixed(2)}`);
+    
+    // Get portfolio data before transaction
+    const portfolioBefore = db.getPortfolio(userId);
+    const cashBalanceBefore = db.getUserCashBalance(userId);
+    const costBasisBefore = db.getCostBasis(userId);
+    
+    // Calculate portfolio value before transaction
+    let portfolioValueBefore = 0;
+    for (const asset of portfolioBefore) {
+      try {
+        const assetStockData = await getStockPrice(asset.stock_name);
+        const assetPrice = parseFloat(assetStockData.price);
+        portfolioValueBefore += asset.total_quantity * assetPrice;
+      } catch (e) {
+        console.log(`   Warning: Could not get price for ${asset.stock_name} for portfolio calculation`);
+      }
+    }
+    
+    const totalValueBefore = portfolioValueBefore + cashBalanceBefore;
+    const totalInvestedBefore = costBasisBefore.reduce((sum, cb) => sum + cb.cost_basis, 0);
+    
+    console.log(`\n📊 PORTFOLIO BEFORE TRANSACTION:`);
+    console.log(`   Cash Balance: $${cashBalanceBefore.toFixed(2)}`);
+    console.log(`   Portfolio Value: $${portfolioValueBefore.toFixed(2)}`);
+    console.log(`   Total Value: $${totalValueBefore.toFixed(2)}`);
+    console.log(`   Total Invested: $${totalInvestedBefore.toFixed(2)}`);
+    console.log(`   Profit/Loss: $${(totalValueBefore - totalInvestedBefore).toFixed(2)}`);
+    
+    // Execute transaction
     db.addTransaction(userId, stock_name, transaction_type, parseInt(quantity), stockPrice);
-    res.status(200).json({ message: "Transaction saved successfully" });
+    
+    // Get portfolio data after transaction
+    const portfolioAfter = db.getPortfolio(userId);
+    const cashBalanceAfter = db.getUserCashBalance(userId);
+    const costBasisAfter = db.getCostBasis(userId);
+    
+    // Calculate portfolio value after transaction
+    let portfolioValueAfter = 0;
+    for (const asset of portfolioAfter) {
+      try {
+        const assetStockData = await getStockPrice(asset.stock_name);
+        const assetPrice = parseFloat(assetStockData.price);
+        portfolioValueAfter += asset.total_quantity * assetPrice;
+      } catch (e) {
+        console.log(`   Warning: Could not get price for ${asset.stock_name} for portfolio calculation`);
+      }
+    }
+    
+    const totalValueAfter = portfolioValueAfter + cashBalanceAfter;
+    const totalInvestedAfter = costBasisAfter.reduce((sum, cb) => sum + cb.cost_basis, 0);
+    
+    console.log(`\n📊 PORTFOLIO AFTER TRANSACTION:`);
+    console.log(`   Cash Balance: $${cashBalanceAfter.toFixed(2)}`);
+    console.log(`   Portfolio Value: $${portfolioValueAfter.toFixed(2)}`);
+    console.log(`   Total Value: $${totalValueAfter.toFixed(2)}`);
+    console.log(`   Total Invested: $${totalInvestedAfter.toFixed(2)}`);
+    console.log(`   Profit/Loss: $${(totalValueAfter - totalInvestedAfter).toFixed(2)}`);
+    
+    console.log(`\n💰 TRANSACTION IMPACT:`);
+    console.log(`   Cash Change: $${(cashBalanceAfter - cashBalanceBefore).toFixed(2)}`);
+    console.log(`   Portfolio Value Change: $${(portfolioValueAfter - portfolioValueBefore).toFixed(2)}`);
+    console.log(`   Total Value Change: $${(totalValueAfter - totalValueBefore).toFixed(2)}`);
+    console.log(`   Invested Change: $${(totalInvestedAfter - totalInvestedBefore).toFixed(2)}`);
+    console.log(`   Profit/Loss Change: $${((totalValueAfter - totalInvestedAfter) - (totalValueBefore - totalInvestedBefore)).toFixed(2)}`);
+    console.log(`\n✅ TRANSACTION COMPLETED SUCCESSFULLY\n`);
+    
+    res.status(200).json({ 
+      message: "Transaction saved successfully",
+      tradeAmount: tradeAmount,
+      cashBalance: cashBalanceAfter,
+      portfolioValue: portfolioValueAfter,
+      totalValue: totalValueAfter,
+      totalInvested: totalInvestedAfter
+    });
   } catch (error) {
     console.error("Error saving transaction:", error.message);
     if (error.message === 'Insufficient stocks to sell') {
@@ -566,9 +662,18 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
       return res.status(401).json({ error: "User not authenticated" });
     }
     
+    console.log(`\n📈 CALCULATING PORTFOLIO ANALYTICS:`);
+    console.log(`   User ID: ${userId}`);
+    
     const portfolio = db.getUserPortfolio(userId);
     const transactions = db.getRecentTransactions(userId, 100);
     const cashBalance = db.getUserCashBalance(userId);
+    const costBasis = db.getCostBasis(userId);
+    
+    console.log(`   Portfolio Holdings: ${portfolio.length} stocks`);
+    console.log(`   Total Transactions: ${transactions.length}`);
+    console.log(`   Cash Balance: $${cashBalance.toFixed(2)}`);
+    console.log(`   Cost Basis Entries: ${costBasis.length}`);
     
     // Simplified analytics calculation
     let totalValue = cashBalance;
@@ -625,6 +730,16 @@ app.get("/api/portfolio/analytics", authorize, async (req, res) => {
     const totalReturn = totalCost > 0 ? (unrealizedPnL / totalCost) * 100 : 0;
     const maxAllocation = Object.keys(assetAllocation).length > 0 ? 
       Math.max(...Object.values(assetAllocation).map(a => a.allocation)) : 0;
+    
+    console.log(`\n📊 PORTFOLIO ANALYTICS RESULTS:`);
+    console.log(`   Total Value: $${totalValue.toFixed(2)}`);
+    console.log(`   Total Cost: $${totalCost.toFixed(2)}`);
+    console.log(`   Cash Balance: $${cashBalance.toFixed(2)}`);
+    console.log(`   Unrealized P&L: $${unrealizedPnL.toFixed(2)}`);
+    console.log(`   Total Return: ${totalReturn.toFixed(2)}%`);
+    console.log(`   Portfolio Diversification: ${Object.keys(assetAllocation).length} stocks`);
+    console.log(`   Max Allocation: ${maxAllocation.toFixed(2)}%`);
+    console.log(`\n✅ ANALYTICS CALCULATED SUCCESSFULLY\n`);
     
     res.json({
       totalValue: totalValue,

@@ -282,6 +282,23 @@ class DatabaseService {
     `).all(userId);
   }
 
+  // Get cost basis (total amount invested) for each stock
+  getCostBasis(userId) {
+    return this.db.prepare(`
+      SELECT 
+        s.stock_name,
+        SUM(CASE 
+          WHEN t.transaction_type = 'BUY' THEN t.quantity * t.price
+          WHEN t.transaction_type = 'SELL' THEN -t.quantity * t.price
+        END) as cost_basis
+      FROM transactions t
+      JOIN stocks s ON t.stock_id = s.stock_id
+      WHERE t.user_id = ?
+      GROUP BY s.stock_name
+      HAVING cost_basis > 0
+    `).all(userId);
+  }
+
   close() {
     this.db.close();
   }

@@ -86,7 +86,18 @@ export const useAddTransaction = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      // Small delay to ensure server has processed the transaction
+      setTimeout(() => {
+        // Invalidate all relevant queries to refresh the entire dashboard
+        queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        queryClient.invalidateQueries({ queryKey: ['cashBalance'] });
+        queryClient.invalidateQueries({ queryKey: ['costBasis'] });
+        queryClient.invalidateQueries({ queryKey: ['market-realtime'] });
+        queryClient.invalidateQueries({ queryKey: ['market-realtime-portfolio'] });
+        queryClient.invalidateQueries({ queryKey: ['market-realtime-overview'] });
+        queryClient.invalidateQueries({ queryKey: ['portfolio-analytics'] });
+      }, 100);
     },
   });
 };

@@ -95,13 +95,13 @@ export const MarketOverview = () => {
     }
   }, []);
 
-  // Rotate through stocks every 15 seconds
+  // Rotate through stocks every 5 minutes (reduced API usage)
   useEffect(() => {
     if (!isRotating) return;
     
     const interval = setInterval(() => {
       setCurrentIndex(prev => (prev + 6) % sp500Stocks.length);
-    }, 15000); // 15 seconds
+    }, 300000); // 5 minutes (300000ms)
 
     return () => clearInterval(interval);
   }, [isRotating]);
@@ -125,7 +125,7 @@ export const MarketOverview = () => {
       if (!response.ok) throw new Error('Failed to fetch market data');
       return response.json();
     },
-    refetchInterval: 30000, // Update every 30 seconds
+    refetchInterval: 300000, // Update every 5 minutes (reduced API usage)
     onSuccess: (data) => {
       // Update cache with fresh data
       if (data) {
@@ -138,24 +138,45 @@ export const MarketOverview = () => {
     }
   });
 
-  // Prepare stocks data with fallback to cache
+  // Prepare stocks data with proper fallback logic
   const stocks = useMemo(() => {
     return currentStocks.map(stock => {
       const realTimeData = marketData?.[stock.symbol];
       const cachedData = cachedStocks[stock.symbol];
       
-      // Use real-time data if available, otherwise fall back to cached data
-      const price = realTimeData?.price ? parseFloat(realTimeData.price) : 
-                   (cachedData?.price ? parseFloat(cachedData.price) : 0);
-      const change = realTimeData?.change_percent ? parseFloat(realTimeData.change_percent) : 
-                    (cachedData?.change_percent ? parseFloat(cachedData.change_percent) : 0);
+      // Priority: Real-time data > Cached data > No data (N/A)
+      const hasRealTimeData = !!realTimeData?.price;
+      const hasCachedData = !!cachedData?.price;
+      
+      let price = null;
+      let change = 0;
+      let dataSource = 'none';
+      
+      if (hasRealTimeData) {
+        // Case 1: Real-time data available
+        price = parseFloat(realTimeData.price);
+        change = parseFloat(realTimeData.change_percent || 0);
+        dataSource = 'realtime';
+      } else if (hasCachedData) {
+        // Case 2: No real-time data, but cached data available
+        price = parseFloat(cachedData.price);
+        change = parseFloat(cachedData.change_percent || 0);
+        dataSource = 'cached';
+      } else {
+        // Case 3: No data available at all
+        price = null;
+        change = 0;
+        dataSource = 'none';
+      }
       
       return {
         ...stock,
         price,
         change,
-        isRealTimeData: !!realTimeData?.price,
-        isCachedData: !realTimeData?.price && !!cachedData?.price
+        isRealTimeData: dataSource === 'realtime',
+        isCachedData: dataSource === 'cached',
+        hasData: dataSource !== 'none',
+        dataSource
       };
     });
   }, [currentStocks, marketData, cachedStocks]);
@@ -234,14 +255,17 @@ export const MarketOverview = () => {
                     {stock.isCachedData && (
                       <span className="text-xs text-blue-500">(cached)</span>
                     )}
+                    {!stock.hasData && (
+                      <span className="text-xs text-red-500">(unavailable)</span>
+                    )}
                   </div>
                 </div>
                 
                 <div className="text-right">
                   <p className="font-semibold text-foreground">
-                    {stock.price > 0 ? `$${stock.price.toFixed(2)}` : 'N/A'}
+                    {stock.hasData ? `$${stock.price.toFixed(2)}` : 'N/A'}
                   </p>
-                  {stock.price > 0 && (
+                  {stock.hasData && (
                     <div className={`flex items-center gap-1 text-sm ${
                       isPositive ? "text-success" : "text-destructive"
                     }`}>
@@ -257,7 +281,7 @@ export const MarketOverview = () => {
         
         <div className="mt-4 pt-3 border-t border-border/50">
           <p className="text-xs text-muted-foreground text-center">
-            {isRotating ? 'Rotating every 15 seconds' : 'Rotation paused'} • 
+            {isRotating ? 'Rotating every 5 minutes' : 'Rotation paused'} • 
             Showing {currentIndex + 1}-{Math.min(currentIndex + 6, sp500Stocks.length)} of {sp500Stocks.length} S&P 500 stocks
           </p>
         </div>

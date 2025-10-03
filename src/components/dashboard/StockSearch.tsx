@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useStockData, useAddTransaction } from "@/hooks/usePortfolio";
+import { useToast } from "@/hooks/use-toast";
 
 export const StockSearch = () => {
   const [symbol, setSymbol] = useState("");
@@ -13,6 +14,7 @@ export const StockSearch = () => {
 
   const { data: stockData, isLoading, error } = useStockData(searchSymbol);
   const addTransaction = useAddTransaction();
+  const { toast } = useToast();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +35,27 @@ export const StockSearch = () => {
         quantity: parseInt(quantity),
       });
       
+      // Reset form
       setQuantity("");
-      alert(`${transactionType} transaction successful!`);
-    } catch (error) {
+      setSymbol("");
+      setSearchSymbol("");
+      
+      // Show success toast
+      toast({
+        title: "Transaction Successful!",
+        description: `${transactionType} ${parseInt(quantity)} shares of ${stockData.symbol} at $${parseFloat(stockData.price).toFixed(2)}`,
+        variant: "default",
+      });
+    } catch (error: any) {
       console.error("Transaction failed:", error);
-      alert("Transaction failed. Please try again.");
+      
+      // Show error toast with specific error message
+      const errorMessage = error?.response?.data?.error || error?.message || "Transaction failed. Please try again.";
+      toast({
+        title: "Transaction Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 

@@ -2,9 +2,23 @@ import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, PieChart, Wallet } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useStockData } from "@/hooks/usePortfolio";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export const PortfolioOverview = () => {
+  const [cachedPrices, setCachedPrices] = useState<{[key: string]: any}>({});
+
+  // Load cached prices from localStorage
+  useEffect(() => {
+    const savedPrices = localStorage.getItem('cachedStockPrices');
+    if (savedPrices) {
+      try {
+        setCachedPrices(JSON.parse(savedPrices));
+      } catch (e) {
+        console.error('Failed to parse cached prices:', e);
+      }
+    }
+  }, []);
+
   const { data: portfolioData, isLoading } = useQuery({
     queryKey: ['portfolio'],
     queryFn: async () => {
@@ -44,6 +58,19 @@ export const PortfolioOverview = () => {
     },
   });
 
+  const { data: costBasisData } = useQuery({
+    queryKey: ['costBasis'],
+    queryFn: async () => {
+      const response = await fetch('/api/portfolio/cost-basis', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch cost basis');
+      }
+      return response.json();
+    },
+  });
+
   // Fetch real-time market data for accurate portfolio valuation
   const { data: marketData } = useQuery({
     queryKey: ['market-realtime-portfolio'],
@@ -53,39 +80,73 @@ export const PortfolioOverview = () => {
       return response.json();
     },
     refetchInterval: 300000, // Update every 5 minutes for real prices
+    onSuccess: (data) => {
+      // Update cache with fresh data
+      if (data) {
+        setCachedPrices(prev => {
+          const newCache = { ...prev, ...data };
+          localStorage.setItem('cachedStockPrices', JSON.stringify(newCache));
+          return newCache;
+        });
+      }
+    }
   });
 
   const portfolio = portfolioData?.portfolio || [];
   const transactions = transactionsData?.transactions || [];
   const cashBalance = cashBalanceData?.cashBalance || 0;
+  const costBasis = costBasisData?.costBasis || [];
   const totalAssets = portfolio.length;
   const totalTransactions = transactions.length;
 
-  // Calculate portfolio value using REAL API prices
+  // Calculate portfolio value using REAL API prices with fallback to cache
   const portfolioValue = useMemo(() => {
     return portfolio.reduce((total: number, asset: any) => {
       const stockData = marketData?.[asset.stock_name];
-      const price = stockData?.price ? parseFloat(stockData.price) : 0;
+      const cachedData = cachedPrices[asset.stock_name];
+      
+      // Use fresh data if available, otherwise fall back to cached data
+      const price = stockData?.price ? parseFloat(stockData.price) : 
+                   (cachedData?.price ? parseFloat(cachedData.price) : 0);
+      
       return total + (asset.total_quantity * price);
     }, 0);
-  }, [portfolio, marketData]);
+  }, [portfolio, marketData, cachedPrices]);
 
   const totalValue = portfolioValue + cashBalance;
+
+  // Calculate total invested value (cost basis)
+  const totalInvestedValue = useMemo(() => {
+    const invested = costBasis.reduce((total: number, item: any) => {
+      return total + item.cost_basis;
+    }, 0);
+    
+    console.log('🔍 PORTFOLIO OVERVIEW DEBUG:');
+    console.log('  Cost Basis Data:', costBasis);
+    console.log('  Total Invested Value:', invested);
+    
+    return invested;
+  }, [costBasis]);
   
-  // Calculate real change based on actual market data
+  // Calculate real change based on actual market data with fallback to cache
   const realChange = useMemo(() => {
-    if (!marketData || portfolio.length === 0) return { change: 0, changePercent: 0 };
+    if (portfolio.length === 0) return { change: 0, changePercent: 0 };
     
     let totalChange = 0;
     let totalPreviousValue = 0;
     
     portfolio.forEach((asset: any) => {
-      const stockData = marketData[asset.stock_name];
-      if (stockData?.price && stockData?.change) {
-        const currentPrice = parseFloat(stockData.price);
-        const change = parseFloat(stockData.change);
+      const stockData = marketData?.[asset.stock_name];
+      const cachedData = cachedPrices[asset.stock_name];
+      
+      // Use fresh data if available, otherwise fall back to cached data
+      const currentPrice = stockData?.price ? parseFloat(stockData.price) : 
+                          (cachedData?.price ? parseFloat(cachedData.price) : 0);
+      const change = stockData?.change ? parseFloat(stockData.change) : 
+                    (cachedData?.change ? parseFloat(cachedData.change) : 0);
+      
+      if (currentPrice > 0 && change !== 0) {
         const previousPrice = currentPrice - change;
-        
         totalChange += asset.total_quantity * change;
         totalPreviousValue += asset.total_quantity * previousPrice;
       }
@@ -93,10 +154,21 @@ export const PortfolioOverview = () => {
     
     const changePercent = totalPreviousValue > 0 ? (totalChange / totalPreviousValue) * 100 : 0;
     return { change: totalChange, changePercent };
-  }, [portfolio, marketData]);
+  }, [portfolio, marketData, cachedPrices]);
   
   const todayChange = realChange.change;
   const todayChangePercent = realChange.changePercent;
+
+  // Debug logging after all values are calculated
+  useEffect(() => {
+    console.log('🔍 COMPLETE PORTFOLIO OVERVIEW DEBUG:');
+    console.log('  Portfolio Value (market):', portfolioValue);
+    console.log('  Cash Balance:', cashBalance);
+    console.log('  Total Value:', totalValue);
+    console.log('  Total Invested Value:', totalInvestedValue);
+    console.log('  Total Assets:', totalAssets);
+    console.log('  Total Transactions:', totalTransactions);
+  }, [portfolioValue, cashBalance, totalValue, totalInvestedValue, totalAssets, totalTransactions]);
 
   const stats = [
     {
@@ -117,7 +189,7 @@ export const PortfolioOverview = () => {
     },
     {
       title: "Invested Value",
-      value: `$${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `$${totalInvestedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: `${totalAssets} stocks`,
       isPositive: true,
       icon: TrendingUp,

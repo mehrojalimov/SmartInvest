@@ -21,6 +21,18 @@ export const AssetCards = () => {
     },
   });
 
+  // Fetch cost basis (total amount invested) for each stock
+  const { data: costBasisData } = useQuery({
+    queryKey: ['costBasis'],
+    queryFn: async () => {
+      const response = await fetch('/api/portfolio/cost-basis', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch cost basis');
+      return response.json();
+    },
+  });
+
   // Load cached prices from localStorage on component mount
   useEffect(() => {
     const savedPrices = localStorage.getItem('cachedStockPrices');
@@ -68,29 +80,47 @@ export const AssetCards = () => {
       );
       const transactionPrice = lastTransaction?.price ? parseFloat(lastTransaction.price) : 0;
       
+      // Get cost basis (total amount invested) for this stock
+      const costBasis = costBasisData?.costBasis?.find(
+        (cb: any) => cb.stock_name === asset.stock_name
+      )?.cost_basis || 0;
+      
       // Use fresh data if available, otherwise fall back to cached data, then transaction price
       const currentPrice = stockData?.price ? parseFloat(stockData.price) : 
                           (cachedData?.price ? parseFloat(cachedData.price) : transactionPrice);
+      
+      // For change calculation, only use real-time or cached data (not transaction data)
+      // Transaction data doesn't have meaningful change information
       const change = stockData?.change ? parseFloat(stockData.change) : 
                     (cachedData?.change ? parseFloat(cachedData.change) : 0);
       const changePercent = stockData?.change_percent ? parseFloat(stockData.change_percent) : 
                            (cachedData?.change_percent ? parseFloat(cachedData.change_percent) : 0);
       
-      // Calculate total value
+      // Determine data source for proper labeling
+      const isRealTimeData = !!stockData?.price;
+      const isCachedData = !isRealTimeData && !!cachedData?.price;
+      const isTransactionData = !isRealTimeData && !isCachedData && transactionPrice > 0;
+      
+      // Calculate total value and profit/loss
       const totalValue = asset.total_quantity * currentPrice;
+      const profitLoss = totalValue - costBasis;
+      const profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0;
       
       return {
         ...asset,
         currentPrice,
         change: changePercent,
         totalValue,
+        costBasis,
+        profitLoss,
+        profitLossPercent,
         isPriceAvailable: currentPrice > 0,
-        isRealTimeData: stockData?.price ? true : false,
-        isCachedData: !stockData?.price && cachedData?.price ? true : false,
-        isTransactionData: !stockData?.price && !cachedData?.price && transactionPrice > 0 ? true : false
+        isRealTimeData,
+        isCachedData,
+        isTransactionData
       };
     }).sort((a, b) => b.totalValue - a.totalValue);
-  }, [portfolioData?.portfolio, marketData, cachedPrices, transactionsData]);
+  }, [portfolioData?.portfolio, marketData, cachedPrices, transactionsData, costBasisData]);
 
   if (isLoading) {
     return (
@@ -162,12 +192,17 @@ export const AssetCards = () => {
                         <span className="text-xs text-orange-500 ml-1">(last trade)</span>
                       )}
                     </p>
-                    {asset.isPriceAvailable && asset.isRealTimeData && (
+                    {asset.isPriceAvailable && (asset.isRealTimeData || asset.isCachedData) && (
                       <div className={`flex items-center gap-1 text-xs ${
                         isPositive ? "text-success" : "text-destructive"
                       }`}>
                         <TrendIcon className="w-3 h-3" />
                         {isPositive ? '+' : ''}{asset.change.toFixed(1)}%
+                      </div>
+                    )}
+                    {asset.isTransactionData && (
+                      <div className="text-xs text-muted-foreground">
+                        No change data
                       </div>
                     )}
                   </div>
@@ -186,6 +221,24 @@ export const AssetCards = () => {
                   <p className="text-xs text-muted-foreground">
                     Total Value
                   </p>
+                  {asset.costBasis > 0 && (
+                    <div className="mt-1">
+                      <p className="text-xs text-muted-foreground">
+                        Invested: ${asset.costBasis.toLocaleString(undefined, { 
+                          minimumFractionDigits: 2, 
+                          maximumFractionDigits: 2 
+                        })}
+                      </p>
+                      <p className={`text-xs font-medium ${
+                        asset.profitLoss >= 0 ? 'text-success' : 'text-destructive'
+                      }`}>
+                        {asset.profitLoss >= 0 ? '+' : ''}${asset.profitLoss.toLocaleString(undefined, { 
+                          minimumFractionDigits: 2, 
+                          maximumFractionDigits: 2 
+                        })} ({asset.profitLoss >= 0 ? '+' : ''}{asset.profitLossPercent.toFixed(1)}%)
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
