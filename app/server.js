@@ -29,7 +29,14 @@ if (process.env.NODE_ENV !== "production") {
 
 // Serve static files from dist directory in production
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../dist")));
+  const distPath = path.join(__dirname, "../dist");
+  if (require('fs').existsSync(distPath)) {
+    app.use(express.static(distPath));
+    console.log('Serving static files from dist directory');
+  } else {
+    console.log('Dist directory not found, serving public directory instead');
+    app.use(express.static("public"));
+  }
 } else {
   app.use(express.static("public"));
 }
@@ -779,7 +786,22 @@ app.use((err, req, res, next) => {
 // Serve React app for client-side routing (production only)
 if (process.env.NODE_ENV === "production") {
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    if (require('fs').existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(200).send(`
+        <html>
+          <head><title>SmartInvest</title></head>
+          <body>
+            <h1>SmartInvest - Portfolio Tracker</h1>
+            <p>Server is running but frontend build is missing.</p>
+            <p>Please check the build process.</p>
+            <p><a href="/health">Health Check</a> | <a href="/test">Test Endpoint</a></p>
+          </body>
+        </html>
+      `);
+    }
   });
 } else {
   // 404 handler for development

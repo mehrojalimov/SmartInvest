@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "Smart Investment Portfolio Tracker",
   "scripts": {
-    "start": "npm run build && cd app && node server.js",
+    "start": "cd app && node server.js",
     "start:local": "node app/server.js",
+    "build": "vite build",
+    "build:start": "npm run build && npm start",
     "setup-dev": "node scripts/setup-dev.js",
     "dev": "vite",
-    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
