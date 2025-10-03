@@ -9,7 +9,7 @@ const { getStockPrice, getRealTimeMarketData, getTechnicalIndicators, getStockSc
 
 let app = express();
 let host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
-let port = process.env.PORT || 3000;
+let port = process.env.PORT || 10000;
 
 // CORS middleware (only in development)
 if (process.env.NODE_ENV !== "production") {

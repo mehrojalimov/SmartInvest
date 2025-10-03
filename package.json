@@ -9,7 +9,8 @@
     "build:start": "npm run build && npm start",
     "setup-dev": "node scripts/setup-dev.js",
     "dev": "vite",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "render-postbuild": "npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
