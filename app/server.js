@@ -35,7 +35,7 @@ if (process.env.NODE_ENV === "production") {
     console.log('Serving static files from dist directory');
   } else {
     console.log('Dist directory not found, serving public directory instead');
-    app.use(express.static("public"));
+    app.use(express.static(path.join(__dirname, "../public")));
   }
 } else {
   app.use(express.static("public"));
@@ -238,6 +238,7 @@ app.post("/api/create", async (req, res) => {
     if (error.message === 'Username already exists') {
       res.status(409).json({ error: "Account already exists with this username" });
     } else {
+      console.error("Unexpected error creating user:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -314,9 +315,9 @@ app.get("/api/auth/check", authorize, (req, res) => {
   });
 });
 
-// Dashboard endpoint
+// Dashboard endpoint - redirect to main app
 app.get("/dashboard", authorize, (req, res) => {
-  res.sendFile(__dirname + "/public/dashboard/index.html");
+  res.redirect("/");
 });
 
 // Stock data endpoint
