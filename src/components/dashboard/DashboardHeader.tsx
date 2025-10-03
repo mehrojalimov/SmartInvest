@@ -1,9 +1,11 @@
-import { TrendingUp, LogOut } from "lucide-react";
+import { TrendingUp, LogOut, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export const DashboardHeader = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
@@ -27,6 +29,15 @@ export const DashboardHeader = () => {
             <span className="text-white/80 text-sm">
               Welcome, {user?.username}
             </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              onClick={() => navigate('/about')}
+            >
+              <Info className="w-4 h-4 mr-2" />
+              About
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 

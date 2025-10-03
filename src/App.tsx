@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => {
                   <Dashboard />
                 </ProtectedRoute>
               } />
+              <Route path="/about" element={<About />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

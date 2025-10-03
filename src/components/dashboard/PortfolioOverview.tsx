@@ -145,7 +145,7 @@ export const PortfolioOverview = () => {
       change: `${performancePercent >= 0 ? '+' : ''}${performancePercent.toFixed(2)}%`,
       isPositive: performancePercent >= 0,
       icon: LineChart,
-      gradient: "bg-gradient-secondary",
+      gradient: "bg-purple-500",
     },
     {
       title: "Cash Balance",
@@ -175,8 +175,8 @@ export const PortfolioOverview = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        {[1, 2, 3, 4, 5].map((i) => (
           <Card key={i} className="p-6 animate-pulse">
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 rounded-xl bg-muted"></div>
@@ -193,7 +193,7 @@ export const PortfolioOverview = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         const TrendIcon = stat.isPositive ? TrendingUp : TrendingDown;
